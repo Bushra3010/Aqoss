@@ -11,6 +11,7 @@ import { DemoQuery } from './query';
 import { createRpc } from './rpc';
 import { createDemoAuth, NOOP_COOKIES, type CookieStore } from './auth';
 import { getTables } from './store';
+import { demoFiles, DEMO_FILES_ROUTE } from './files';
 
 export function createDemoClient(cookies: CookieStore = NOOP_COOKIES) {
   const tables = getTables();
@@ -28,16 +29,27 @@ export function createDemoClient(cookies: CookieStore = NOOP_COOKIES) {
     auth: createDemoAuth(cookies),
 
     storage: {
-      from() {
+      from(bucket: string) {
+        const key = (path: string) => `${bucket}/${path}`;
         return {
-          async upload() {
-            return {
-              data: null,
-              error: { message: 'File uploads are unavailable in demo mode.' },
-            };
+          async upload(path: string, body: Blob | ArrayBuffer | Uint8Array, options?: { contentType?: string }) {
+            const bytes =
+              body instanceof Blob
+                ? await body.arrayBuffer()
+                : body instanceof Uint8Array
+                  ? body.slice().buffer
+                  : body;
+            const contentType =
+              options?.contentType ?? (body instanceof Blob ? body.type : '') ?? 'application/octet-stream';
+            demoFiles().set(key(path), { contentType: contentType || 'application/octet-stream', bytes });
+            return { data: { path }, error: null };
+          },
+          async remove(paths: string[]) {
+            for (const path of paths) demoFiles().delete(key(path));
+            return { data: paths.map((name) => ({ name })), error: null };
           },
           getPublicUrl(path: string) {
-            return { data: { publicUrl: `https://picsum.photos/seed/${encodeURIComponent(path)}/800/600` } };
+            return { data: { publicUrl: `${DEMO_FILES_ROUTE}/${bucket}/${path}` } };
           },
         };
       },

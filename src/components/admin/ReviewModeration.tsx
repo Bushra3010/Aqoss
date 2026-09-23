@@ -94,7 +94,10 @@ export function ReviewModeration({
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={() => setResponding(responding === review.id ? null : review.id)}
+                  onClick={() => {
+                    setResponse(review.admin_response ?? '');
+                    setResponding(responding === review.id ? null : review.id);
+                  }}
                 >
                   {review.admin_response ? 'Edit response' : 'Respond'}
                 </button>

@@ -129,6 +129,38 @@ export const hotelSchema = z.object({
   currency: z.string().length(3).default('INR'),
 });
 
+/** A new room type from the hotel panel. Form fields arrive as strings. */
+/** A new room type from the hotel panel. Form fields arrive as strings. */
+const whole = (message: string) => z.coerce.number({ invalid_type_error: message }).int(message);
+
+export const roomTypeSchema = z
+  .object({
+    name: z
+      .string({ required_error: 'Give the room a name.' })
+      .trim()
+      .min(2, 'Give the room a name.')
+      .max(80, 'Keep the name under 80 characters.'),
+    description: z.string().trim().max(2000).nullish(),
+    bed_type: z.string().trim().max(60).nullish(),
+    room_size_sqft: whole('Enter the size in square feet.').min(50, 'Enter at least 50 sq ft.').max(20000).nullish(),
+    max_adults: whole('Enter how many adults.').min(1, 'At least 1 adult.').max(20),
+    max_children: whole('Enter how many children.').min(0).max(20).default(0),
+    max_occupancy: whole('Enter the most guests allowed.').min(1).max(30),
+    base_price: z.coerce
+      .number({ required_error: 'Set a nightly price.', invalid_type_error: 'Set a nightly price.' })
+      .min(1, 'Set a nightly price.')
+      .max(10_000_000),
+    discount_percent: z.coerce.number({ invalid_type_error: 'Enter a percentage.' }).min(0).max(90, 'At most 90%.').default(0),
+    physical_rooms: whole('Enter how many rooms.').min(1, 'A room type needs at least one room.').max(500),
+    amenities: z.string().trim().max(1000).nullish(),
+    is_refundable: z.coerce.boolean().default(false),
+    is_active: z.coerce.boolean().default(false),
+  })
+  .refine((v) => v.max_occupancy >= v.max_adults, {
+    message: 'Max guests must be at least the number of adults.',
+    path: ['max_occupancy'],
+  });
+
 export const websiteSchema = z.object({
   hotel_id: z.string().uuid(),
   name: z.string().trim().min(2).max(160),

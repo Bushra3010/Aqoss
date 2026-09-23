@@ -353,17 +353,33 @@ export async function getDashboardMetrics(
   };
 
   // -- customers ----------------------------------------------------------
-  // Total registered, moving with new sign-ups window over window.
-  const { data: profileRows } = await supabase
-    .from('profiles')
-    .select('created_at')
-    .eq('is_admin', false);
-
-  const profiles = (profileRows ?? []) as any[];
+  // Platform-wide: total registered, moving with new sign-ups window over
+  // window. Scoped to some hotels: distinct guests who booked them, dated by
+  // their first booking — a hotel must never see the platform's customer base.
+  let firstSeen: string[];
+  if (filters.hotelId || filters.hotelScope?.length) {
+    const first = new Map<string, string>();
+    for (const r of rows) {
+      const guest = r.customer_id ?? String(r.guest_email ?? '').toLowerCase();
+      if (!guest) continue;
+      const seen = first.get(guest);
+      if (!seen || r.created_at < seen) first.set(guest, r.created_at);
+    }
+    firstSeen = [...first.values()];
+  } else {
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('created_at')
+      .eq('is_admin', false);
+    firstSeen = ((profileRows ?? []) as any[]).map((p) => p.created_at);
+  }
 
   const customers = {
-    ...delta(profiles.filter(inWindow).length, profiles.filter(inPrevious).length),
-    value: profiles.length,
+    ...delta(
+      firstSeen.filter((at) => at >= windowStart).length,
+      firstSeen.filter((at) => at >= previousStart && at < windowStart).length,
+    ),
+    value: firstSeen.length,
   };
 
   // -- review score -------------------------------------------------------

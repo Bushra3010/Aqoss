@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createAdminSupabase } from '@/lib/supabase/admin';
+import { todayISO } from '@/lib/utils';
 
 /** The 360° customer view the CRM shows (PRD §25). */
 export async function getCustomerProfile(customerId: string) {
@@ -32,7 +33,7 @@ export async function getCustomerProfile(customerId: string) {
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const rows = (bookings.data ?? []) as any[];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   return {
     profile: profile.data,

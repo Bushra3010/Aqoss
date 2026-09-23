@@ -80,10 +80,51 @@ credentials are configured.
 
 ## Admin UI
 
-The CRM shell is `src/app/admin/layout.tsx`: a fixed 250px sidebar, a 72px top bar, and a
-`#F8FAFC` page background. Navigation is declared once in that file as `MAIN_NAV` / `ADMIN_NAV`
-and filtered by permission before it reaches the client; `AdminSidebar` takes icon *names*, not
-components, because the layout is a Server Component.
+The CRM frame is `src/components/admin/AdminShell.tsx`: a fixed 250px sidebar, a 72px top bar, and a
+`#F8FAFC` page background. Navigation is declared in each layout (`MAIN_NAV` / `ADMIN_NAV` in the
+platform layout, `HOTEL_NAV` in the hotel panel) and filtered by permission before it reaches the
+client; `AdminSidebar` takes icon *names*, not components, because layouts are Server Components.
+
+**Two shells, one frame.** `src/app/admin/(platform)/layout.tsx` is the whole-platform CRM;
+`src/app/admin/h/[hotel]/layout.tsx` is one hotel's own panel at `/admin/h/<hotel-slug>/…`. Both
+render `AdminShell` and differ only in the navigation they pass. Never make one layout branch on
+the pathname to pick its sidebar or redirect — Next does not re-run a shared layout on client
+navigation, so the first decision sticks (it caused a redirect loop once). Login sits outside both.
+
+Every hotel-panel page calls `getHotelPanel(slug)` (`src/lib/admin/hotel-panel.ts`), which returns
+null for an unknown hotel *and* for one outside the admin's scope, so both are a 404. Panel pages
+render the same view components as the platform pages (`src/components/admin/views/`) with a
+`hotelId` that pins them to the property and hides the hotel column; do not fork a view for the
+panel. A record opened through a panel URL must belong to that hotel (`BookingDetailView` 404s
+otherwise), even for a super admin. Someone scoped to exactly one hotel lands in its panel from
+`/admin`.
+
+Hotel-scoped admins: pages filter by `session.hotelScope`, and **write actions must check the
+row's own hotel** (`assertRowInScope` in `admin/actions.ts`) — a permission alone is not enough.
+The `property_manager` role deliberately omits customers, offers, notifications, admins,
+settings and audit, because those pages are not hotel-filtered yet.
+
+**Leads** are abandoned bookings: PENDING and unpaid for longer than `BOOKING_HOLD_MINUTES`. The
+booking row is the lead; `booking_leads` only stores follow-up (status, notes). CONVERTED is
+derived from the booking being paid and is never set by hand.
+
+**Photos**: the cover is always the first photo (`writeOrder` in `image.service.ts`) — the
+website gallery leads with the first image while cards and link previews read `is_cover`, so the
+two must not drift. Uploads go one file per server-action call (limit `11mb` in
+`next.config.mjs`). In demo mode files live in memory (`src/lib/demo/files.ts`) and are served
+from `/api/demo-files/…`.
+
+**Room types** are created by `createRoomType` (`room-type.service.ts`), which also adds the
+physical rooms (next free floor, `<floor><nn>`) and a year of `room_inventory`. A room type with
+no inventory rows shows on the website but can never be booked, so never insert one without it.
+
+**Dates**: `YYYY-MM-DD` strings are local calendar days. Never turn a `Date` back into one with
+`toISOString()` — east of UTC that is the previous day, which once saved every admin price a
+night early. Use `toISODate()` / `todayISO()` from `lib/utils`.
+
+To run a second dev server beside another one, give it its own build folder:
+`NEXT_DIST_DIR=.next-alt next dev -p 3001` (the `aqoss-dev-alt` launch config). Two servers on
+one `.next` overwrite each other.
 
 Dashboard pieces live in `src/components/admin/dashboard/`. Cards are `rounded-2xl border
 border-slate-200 bg-white`, section titles `text-base font-bold`, and supporting copy

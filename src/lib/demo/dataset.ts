@@ -171,7 +171,7 @@ export function buildDataset(options: DatasetOptions): Tables {
     payments: [], refunds: [], invoices: [],
     transport_services: [], transport_routes: [], transport_slots: [], transport_bookings: [],
     offers: [], coupons: [], coupon_redemptions: [],
-    reviews: [], review_images: [],
+    reviews: [], review_images: [], booking_leads: [],
     notification_templates: [], notifications: [], notification_logs: [], otp_codes: [],
     audit_logs: [], platform_settings: [],
   };
@@ -210,6 +210,7 @@ function seedRbac(t: Tables) {
     ['notifications.read', 'notifications', 'read'], ['notifications.write', 'notifications', 'write'],
     ['admins.read', 'admins', 'read'], ['admins.write', 'admins', 'write'],
     ['audit.read', 'audit', 'read'], ['settings.write', 'settings', 'write'],
+    ['leads.read', 'leads', 'read'], ['leads.write', 'leads', 'write'],
   ];
 
   for (const [key, module, action] of permissionKeys) {
@@ -234,7 +235,7 @@ function seedRbac(t: Tables) {
     booking_manager: [
       'dashboard.read', 'bookings.read', 'bookings.write', 'bookings.cancel', 'bookings.checkin',
       'customers.read', 'customers.write', 'rooms.read', 'inventory.read', 'payments.read',
-      'transport.read', 'hotels.read',
+      'transport.read', 'hotels.read', 'leads.read', 'leads.write',
     ],
     hotel_manager: [
       'dashboard.read', 'hotels.read', 'hotels.write', 'websites.read', 'websites.write',
@@ -245,6 +246,7 @@ function seedRbac(t: Tables) {
     crm_staff: [
       'dashboard.read', 'customers.read', 'customers.write', 'bookings.read', 'bookings.write',
       'reviews.read', 'reviews.moderate', 'hotels.read', 'notifications.read',
+      'leads.read', 'leads.write',
     ],
     finance_staff: [
       'dashboard.read', 'payments.read', 'payments.write', 'payments.refund', 'bookings.read',
@@ -257,7 +259,7 @@ function seedRbac(t: Tables) {
       'rooms.read', 'rooms.write', 'inventory.read', 'inventory.write', 'pricing.read',
       'pricing.write', 'bookings.read', 'bookings.write', 'bookings.cancel', 'bookings.checkin',
       'payments.read', 'payments.refund', 'transport.read', 'reviews.read', 'reviews.moderate',
-      'reports.read',
+      'reports.read', 'leads.read', 'leads.write',
     ],
   };
 

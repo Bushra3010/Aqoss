@@ -13,13 +13,20 @@ export interface UpcomingStayRow {
   arrivingToday: boolean;
 }
 
-export function UpcomingStays({ rows }: { rows: UpcomingStayRow[] }) {
+export function UpcomingStays({
+  rows,
+  bookingsHref = '/admin/bookings',
+}: {
+  rows: UpcomingStayRow[];
+  /** Base of the booking links, so a hotel panel keeps them inside itself. */
+  bookingsHref?: string;
+}) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-base font-bold text-slate-900">Upcoming Stays</h2>
         <Link
-          href="/admin/bookings?filter=checkin"
+          href={`${bookingsHref}?filter=checkin`}
           className="flex shrink-0 items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
         >
           View All <ArrowRight className="h-3.5 w-3.5" />
@@ -30,7 +37,7 @@ export function UpcomingStays({ rows }: { rows: UpcomingStayRow[] }) {
         {rows.map((row) => (
           <li key={row.id}>
             <Link
-              href={`/admin/bookings/${row.id}`}
+              href={`${bookingsHref}/${row.id}`}
               className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-slate-50"
             >
               <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-100">

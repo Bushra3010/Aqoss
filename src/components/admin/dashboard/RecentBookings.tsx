@@ -42,7 +42,14 @@ export interface RecentBookingRow {
   currency: string;
 }
 
-export function RecentBookings({ rows }: { rows: RecentBookingRow[] }) {
+export function RecentBookings({
+  rows,
+  bookingsHref = '/admin/bookings',
+}: {
+  rows: RecentBookingRow[];
+  /** Base of the booking links, so a hotel panel keeps them inside itself. */
+  bookingsHref?: string;
+}) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white">
       <div className="flex items-start justify-between gap-4 p-5 pb-4">
@@ -51,7 +58,7 @@ export function RecentBookings({ rows }: { rows: RecentBookingRow[] }) {
           <p className="mt-0.5 text-sm text-slate-500">Latest customer bookings across all hotels</p>
         </div>
         <Link
-          href="/admin/bookings"
+          href={bookingsHref}
           className="flex shrink-0 items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
         >
           View All <ArrowRight className="h-3.5 w-3.5" />
@@ -81,7 +88,7 @@ export function RecentBookings({ rows }: { rows: RecentBookingRow[] }) {
             {rows.map((row) => (
               <tr key={row.id} className="transition hover:bg-slate-50/60">
                 <td className="whitespace-nowrap px-5 py-3">
-                  <Link href={`/admin/bookings/${row.id}`} className="flex items-center gap-2.5">
+                  <Link href={`${bookingsHref}/${row.id}`} className="flex items-center gap-2.5">
                     <span
                       className={cn(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
@@ -112,7 +119,7 @@ export function RecentBookings({ rows }: { rows: RecentBookingRow[] }) {
                 </td>
                 <td className="px-5 py-3 text-right">
                   <Link
-                    href={`/admin/bookings/${row.id}`}
+                    href={`${bookingsHref}/${row.id}`}
                     className="inline-flex rounded-md p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-500"
                     aria-label={`Open booking for ${row.guest}`}
                   >

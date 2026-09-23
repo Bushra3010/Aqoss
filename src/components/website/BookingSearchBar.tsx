@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarDays, ChevronDown, Heart, MapPin, User, Users } from 'lucide-react';
-import { todayISO } from '@/lib/utils';
+import { todayISO, toISODate } from '@/lib/utils';
 
 /**
  * The booking bar that sits under the header on every hotel website.
@@ -91,7 +91,8 @@ export function BookingSearchBar({
                 if (value >= checkOut) {
                   const next = new Date(`${value}T00:00:00`);
                   next.setDate(next.getDate() + 1);
-                  setCheckOut(next.toISOString().slice(0, 10));
+                  // Local date parts: toISOString() is UTC, a day behind east of UTC.
+                  setCheckOut(toISODate(next));
                 }
               }}
             />

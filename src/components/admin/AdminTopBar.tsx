@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, ChevronDown, Menu, Search, X } from 'lucide-react';
-import { AdminSidebar, type NavItem } from './AdminSidebar';
+import { AdminSidebar, type NavItem, type PanelContext } from './AdminSidebar';
 import { initials } from '@/lib/utils';
 
 export function AdminTopBar({
@@ -12,6 +12,8 @@ export function AdminTopBar({
   canReadNotifications,
   main,
   admin,
+  panel,
+  searchAction = '/admin/bookings',
 }: {
   user: { name: string; role: string };
   notifications: number;
@@ -19,6 +21,9 @@ export function AdminTopBar({
   canReadNotifications: boolean;
   main: NavItem[];
   admin: NavItem[];
+  panel?: PanelContext;
+  /** Where the search box submits; a hotel panel searches its own bookings. */
+  searchAction?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,7 +64,7 @@ export function AdminTopBar({
           </button>
 
           <form
-            action="/admin/bookings"
+            action={searchAction}
             className="relative hidden max-w-xl flex-1 sm:block"
             role="search"
           >
@@ -68,7 +73,7 @@ export function AdminTopBar({
               ref={searchRef}
               name="q"
               type="search"
-              placeholder="Search hotels, bookings, customers..."
+              placeholder={panel ? `Search ${panel.title} bookings...` : 'Search hotels, bookings, customers...'}
               aria-label="Search"
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-16 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
             />
@@ -179,7 +184,7 @@ export function AdminTopBar({
             >
               <X className="h-5 w-5" />
             </button>
-            <AdminSidebar main={main} admin={admin} onNavigate={() => setDrawerOpen(false)} />
+            <AdminSidebar main={main} admin={admin} panel={panel} onNavigate={() => setDrawerOpen(false)} />
           </div>
         </div>
       ) : null}

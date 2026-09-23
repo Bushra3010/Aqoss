@@ -3,7 +3,7 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { Alert, Field } from '@/components/ui';
 import { updateInventory, type ActionState } from '@/app/admin/actions';
-import { cn } from '@/lib/utils';
+import { cn, toISODate } from '@/lib/utils';
 
 const initial: ActionState = {};
 
@@ -52,7 +52,7 @@ export function InventoryEditor({
     : (() => {
         const out: string[] = [];
         for (let d = new Date(`${from}T00:00:00`); d < new Date(`${to}T00:00:00`); d.setDate(d.getDate() + 1)) {
-          out.push(d.toISOString().slice(0, 10));
+          out.push(toISODate(d));
         }
         return out;
       })();

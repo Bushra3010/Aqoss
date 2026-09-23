@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Globe, BedDouble, Tag, CalendarDays, User,
   CreditCard, Ticket, Star, BarChart3, Bell, ShieldCheck, Settings, ScrollText,
-  type LucideIcon,
+  Target, Images, ArrowLeft, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,15 @@ export interface NavItem {
   href: string;
   label: string;
   icon: string;
+  /** Active only on this exact path, not its children (dashboards). */
+  exact?: boolean;
+}
+
+/** Set inside a hotel's own panel: whose panel it is, and the way back out. */
+export interface PanelContext {
+  title: string;
+  subtitle?: string;
+  backHref?: string;
 }
 
 /** Icon names are passed from the server layout, which cannot send components. */
@@ -32,25 +41,29 @@ const ICONS: Record<string, LucideIcon> = {
   users: ShieldCheck,
   settings: Settings,
   audit: ScrollText,
+  leads: Target,
+  images: Images,
 };
 
 export function AdminSidebar({
   main,
   admin,
+  panel,
   onNavigate,
 }: {
   main: NavItem[];
   admin: NavItem[];
+  panel?: PanelContext;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+  const isActive = (item: NavItem) =>
+    item.exact || item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
 
   const renderItem = (item: NavItem) => {
     const Icon = ICONS[item.icon] ?? LayoutDashboard;
-    const active = isActive(item.href);
+    const active = isActive(item);
 
     return (
       <li key={item.href}>
@@ -90,7 +103,23 @@ export function AdminSidebar({
         </span>
       </div>
 
-      <nav aria-label="CRM" className="flex-1 overflow-y-auto px-3 pb-4">
+      {panel ? (
+        <div className="mx-3 mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+          {panel.backHref ? (
+            <Link
+              href={panel.backHref}
+              onClick={onNavigate}
+              className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> All hotels
+            </Link>
+          ) : null}
+          <p className="truncate text-sm font-semibold text-slate-900">{panel.title}</p>
+          {panel.subtitle ? <p className="truncate text-xs text-slate-500">{panel.subtitle}</p> : null}
+        </div>
+      ) : null}
+
+      <nav aria-label={panel ? `${panel.title} admin` : 'CRM'} className="flex-1 overflow-y-auto px-3 pb-4">
         <ul className="space-y-1">{main.map(renderItem)}</ul>
 
         {admin.length ? (

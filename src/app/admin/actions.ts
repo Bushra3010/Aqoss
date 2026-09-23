@@ -12,7 +12,7 @@ import { cancelBooking, setBookingStatus } from '@/services/booking.service';
 import { refundPayment } from '@/services/payment.service';
 import { moderateReview } from '@/services/review.service';
 import { ensureInventory } from '@/services/availability.service';
-import { slugify } from '@/lib/utils';
+import { slugify, toISODate } from '@/lib/utils';
 import { AppError } from '@/lib/api';
 
 export type AdminAuthState = { error?: string };
@@ -156,7 +156,7 @@ export async function saveHotel(_prev: ActionState, formData: FormData): Promise
       redirect(`/admin/hotels/${data.id}`);
     }
 
-    revalidatePath('/admin/hotels');
+    revalidatePath('/', 'layout');
     return { success: 'Hotel saved.' };
   } catch (err) {
     if (isRedirectError(err)) throw err;
@@ -183,7 +183,7 @@ export async function setHotelStatus(hotelId: string, status: 'ACTIVE' | 'INACTI
     newValue: { status },
   });
 
-  revalidatePath('/admin/hotels');
+  revalidatePath('/', 'layout');
 }
 
 // ---------------------------------------------------------------------------
@@ -277,7 +277,7 @@ export async function saveWebsite(_prev: ActionState, formData: FormData): Promi
       newValue: payload,
     });
 
-    revalidatePath('/admin/websites');
+    revalidatePath('/', 'layout');
     if (!id && websiteId) redirect(`/admin/websites/${websiteId}`);
 
     return { success: 'Website saved.' };
@@ -314,7 +314,7 @@ export async function setWebsiteStatus(
     newValue: { status },
   });
 
-  revalidatePath('/admin/websites');
+  revalidatePath('/', 'layout');
 }
 
 // ---------------------------------------------------------------------------
@@ -325,7 +325,7 @@ export async function adminCancelBooking(bookingId: string, reason: string) {
   const session = await requirePermission('bookings.cancel');
   await assertRowInScope(session, 'bookings', bookingId);
   await cancelBooking({ bookingId, reason, actorId: session.userId });
-  revalidatePath('/admin/bookings');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function adminSetBookingStatus(
@@ -335,15 +335,15 @@ export async function adminSetBookingStatus(
   const session = await requirePermission('bookings.checkin');
   await assertRowInScope(session, 'bookings', bookingId);
   await setBookingStatus({ bookingId, status, actorId: session.userId });
-  revalidatePath('/admin/bookings');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function adminRefund(bookingId: string, amount?: number, reason?: string) {
   const session = await requirePermission('payments.refund');
   await assertRowInScope(session, 'bookings', bookingId);
   await refundPayment({ bookingId, amount, reason, actorId: session.userId });
-  revalidatePath('/admin/bookings');
-  revalidatePath('/admin/payments');
+  // Also refreshes the same booking inside any hotel panel.
+  revalidatePath('/admin', 'layout');
 }
 
 // ---------------------------------------------------------------------------
@@ -358,7 +358,7 @@ export async function adminModerateReview(
   const session = await requirePermission('reviews.moderate');
   await assertRowInScope(session, 'reviews', reviewId);
   await moderateReview({ reviewId, status, adminResponse, actorId: session.userId });
-  revalidatePath('/admin/reviews');
+  revalidatePath('/admin', 'layout');
 }
 
 // ---------------------------------------------------------------------------
@@ -414,8 +414,10 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
 
     if (parsed.price !== undefined) {
       const dates: string[] = [];
+      // Local date parts, not toISOString(): east of UTC, local midnight is
+      // still the previous day in UTC and every price landed a night early.
       for (let d = new Date(`${parsed.from}T00:00:00`); d < new Date(`${parsed.to}T00:00:00`); d.setDate(d.getDate() + 1)) {
-        dates.push(d.toISOString().slice(0, 10));
+        dates.push(toISODate(d));
       }
 
       await supabase.from('room_prices').upsert(
@@ -438,7 +440,7 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
       newValue: parsed,
     });
 
-    revalidatePath('/admin/inventory');
+    revalidatePath('/admin', 'layout');
     return { success: 'Availability updated.' };
   } catch (err) {
     return toState(err);

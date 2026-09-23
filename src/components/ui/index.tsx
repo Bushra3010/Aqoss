@@ -38,6 +38,11 @@ export function StatusBadge({ status }: { status: string }) {
     DRAFT: 'slate',
     INACTIVE: 'slate',
     SUSPENDED: 'red',
+    // Leads
+    NEW: 'blue',
+    CONTACTED: 'amber',
+    CONVERTED: 'green',
+    LOST: 'slate',
   };
 
   return <Badge tone={map[status] ?? 'slate'}>{status.replace(/_/g, ' ').toLowerCase()}</Badge>;
