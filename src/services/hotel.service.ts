@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cache } from 'react';
 import { createAdminSupabase } from '@/lib/supabase/admin';
+import { todayISO } from '@/lib/utils';
 import type { HotelSiteData, Review } from '@/types';
 
 /**
@@ -39,6 +40,7 @@ export const getHotelSiteData = cache(
 
     if (!hotel) return null;
 
+    const today = todayISO();
     const [images, amenities, policies, nearby, roomTypes, reviews, offers] = await Promise.all([
       supabase
         .from('hotel_images')
@@ -106,7 +108,10 @@ export const getHotelSiteData = cache(
       })) as HotelSiteData['roomTypes'],
       reviews: reviewRows,
       reviewSummary: { average, count: reviewRows.length },
-      offers: (offers.data ?? []) as HotelSiteData['offers'],
+      // Only offers running today; an expired deal on the website is worse than none.
+      offers: ((offers.data ?? []) as HotelSiteData['offers']).filter(
+        (o) => (!o.valid_from || o.valid_from <= today) && (!o.valid_until || o.valid_until >= today),
+      ),
     };
   },
 );

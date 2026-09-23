@@ -149,6 +149,11 @@ function parseClause(clause: string): Filter {
       return (r) => r[column] > raw;
     case 'lt':
       return (r) => r[column] < raw;
+    case 'in': {
+      // `in.(a,b,c)` — PostgREST's list syntax.
+      const values = new Set(raw.replace(/^\(|\)$/g, '').split(',').map((v) => v.trim()));
+      return (r) => values.has(String(r[column]));
+    }
     default:
       return () => true;
   }

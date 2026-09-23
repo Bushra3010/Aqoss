@@ -253,13 +253,13 @@ function seedRbac(t: Tables) {
       'customers.read', 'reports.read', 'hotels.read',
     ],
     // Only modules whose pages and actions honour hotel scope, so a login
-    // limited to one property never sees another's customers, offers or logs.
+    // limited to one property never sees another's customers or logs.
     property_manager: [
       'dashboard.read', 'hotels.read', 'hotels.write', 'websites.read', 'websites.write',
       'rooms.read', 'rooms.write', 'inventory.read', 'inventory.write', 'pricing.read',
       'pricing.write', 'bookings.read', 'bookings.write', 'bookings.cancel', 'bookings.checkin',
       'payments.read', 'payments.refund', 'transport.read', 'reviews.read', 'reviews.moderate',
-      'reports.read', 'leads.read', 'leads.write',
+      'reports.read', 'leads.read', 'leads.write', 'offers.read', 'offers.write',
     ],
   };
 

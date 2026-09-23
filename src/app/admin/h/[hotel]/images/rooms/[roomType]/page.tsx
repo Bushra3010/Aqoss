@@ -17,7 +17,7 @@ export default async function RoomImagesPage({
   searchParams,
 }: {
   params: { hotel: string; roomType: string };
-  searchParams: { created?: string };
+  searchParams: { created?: string; failed?: string };
 }) {
   const panel = await getHotelPanel(params.hotel);
   if (!panel) notFound();
@@ -53,8 +53,19 @@ export default async function RoomImagesPage({
       {searchParams.created ? (
         <div className="mb-4">
           <Alert tone="success">
-            {roomType.name} is created and open for booking. Add a few photos so guests can see it.
+            {roomType.name} is created and open for booking.{' '}
+            {images.length
+              ? `${images.length} photo${images.length > 1 ? 's' : ''} added.`
+              : 'Add a few photos so guests can see it.'}
           </Alert>
+          {Number(searchParams.failed) > 0 ? (
+            <div className="mt-3">
+              <Alert>
+                {searchParams.failed} photo{Number(searchParams.failed) > 1 ? 's' : ''} could not be uploaded. Add{' '}
+                {Number(searchParams.failed) > 1 ? 'them' : 'it'} again below.
+              </Alert>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <ImageManager

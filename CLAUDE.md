@@ -101,8 +101,12 @@ otherwise), even for a super admin. Someone scoped to exactly one hotel lands in
 
 Hotel-scoped admins: pages filter by `session.hotelScope`, and **write actions must check the
 row's own hotel** (`assertRowInScope` in `admin/actions.ts`) — a permission alone is not enough.
-The `property_manager` role deliberately omits customers, offers, notifications, admins,
-settings and audit, because those pages are not hotel-filtered yet.
+The `property_manager` role deliberately omits customers, notifications, admins, settings and
+audit, because those pages are not hotel-filtered yet. Offers are: a scoped admin sees their
+hotels' offers and coupons plus platform-wide ones, and may only create or pause ones limited to
+their own hotels (`offer-actions.ts`).
+
+Offers are promotions shown on the website; only coupons change the price at checkout.
 
 **Leads** are abandoned bookings: PENDING and unpaid for longer than `BOOKING_HOLD_MINUTES`. The
 booking row is the lead; `booking_leads` only stores follow-up (status, notes). CONVERTED is

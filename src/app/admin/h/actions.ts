@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { requirePermission, canAccessHotel } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/api';
@@ -24,18 +23,15 @@ export type PanelActionState = {
   success?: string;
   /** Per-field messages from validation, keyed by input name. */
   fieldErrors?: Record<string, string>;
+  /** Set when a room type was created: its id, and where to continue. */
+  roomTypeId?: string;
+  next?: string;
 };
 
 function toState(err: unknown): PanelActionState {
   if (err instanceof AppError) return { error: err.message };
   console.error('[aqoss] hotel panel action failed', err);
   return { error: 'That action could not be completed. Please try again.' };
-}
-
-/** Next.js signals redirects by throwing; let those through untouched. */
-function isRedirectError(err: unknown): boolean {
-  return typeof (err as { digest?: string })?.digest === 'string' &&
-    (err as { digest: string }).digest.startsWith('NEXT_REDIRECT');
 }
 
 /** Hotel panels, the website and the platform CRM all read what these change. */
@@ -167,7 +163,10 @@ export async function deletePanelImage(kind: string, imageId: string): Promise<P
 // Rooms
 // ---------------------------------------------------------------------------
 
-/** Create a room type in a hotel, then continue to its photos. */
+/**
+ * Create a room type in a hotel. Returns rather than redirects, so the form
+ * can upload the photos picked alongside it before moving on to `next`.
+ */
 export async function createPanelRoomType(
   _prev: PanelActionState,
   formData: FormData,
@@ -203,9 +202,12 @@ export async function createPanelRoomType(
 
     const roomType = await createRoomType({ hotelId: hotel.id, data: parsed.data, actorId: session.userId });
     refresh();
-    redirect(`${hotelPanelPath(hotel.slug, `images/rooms/${roomType.id}`)}?created=1`);
+    return {
+      success: `${parsed.data.name} created.`,
+      roomTypeId: roomType.id,
+      next: `${hotelPanelPath(hotel.slug, `images/rooms/${roomType.id}`)}?created=1`,
+    };
   } catch (err) {
-    if (isRedirectError(err)) throw err;
     return toState(err);
   }
 }

@@ -19,7 +19,7 @@ export default async function NewRoomTypePage({ params }: { params: { hotel: str
         title="Add room type"
         description={`A new kind of room at ${panel.hotel.name} — e.g. "Deluxe Sea View". It appears on the website as soon as it is active.`}
       />
-      <RoomTypeForm hotelId={panel.hotel.id} cancelHref={hotelPanelPath(panel.hotel.slug, 'rooms')} />
+      <RoomTypeForm hotelId={panel.hotel.id} hotelName={panel.hotel.name} cancelHref={hotelPanelPath(panel.hotel.slug, 'rooms')} />
     </>
   );
 }

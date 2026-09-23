@@ -161,6 +161,61 @@ export const roomTypeSchema = z
     path: ['max_occupancy'],
   });
 
+/**
+ * Discount shared by offers and coupons: a percentage, or a fixed rupee
+ * amount. Form fields arrive as strings; blank means "not set".
+ */
+const discountFields = {
+  discount_kind: z.enum(['PERCENT', 'AMOUNT'], { required_error: 'Choose percent or amount.' }),
+  discount_value: z.coerce
+    .number({ required_error: 'Enter the discount.', invalid_type_error: 'Enter the discount.' })
+    .positive('Enter the discount.'),
+  max_discount: z.coerce.number({ invalid_type_error: 'Enter an amount.' }).positive().nullish(),
+  valid_from: isoDate.nullish(),
+  valid_until: isoDate.nullish(),
+  is_active: z.coerce.boolean().default(false),
+};
+
+const discountRules = <T extends { discount_kind: string; discount_value: number; valid_from?: string | null; valid_until?: string | null }>(
+  v: T,
+  ctx: z.RefinementCtx,
+) => {
+  if (v.discount_kind === 'PERCENT' && v.discount_value > 90) {
+    ctx.addIssue({ code: 'custom', path: ['discount_value'], message: 'At most 90%.' });
+  }
+  if (v.valid_from && v.valid_until && v.valid_until < v.valid_from) {
+    ctx.addIssue({ code: 'custom', path: ['valid_until'], message: 'Must be on or after the start date.' });
+  }
+};
+
+/** An offer shown on hotel websites. `hotel_id` blank = every hotel. */
+export const offerFormSchema = z
+  .object({
+    title: z.string({ required_error: 'Give the offer a title.' }).trim().min(3, 'Give the offer a title.').max(120),
+    description: z.string().trim().max(1000).nullish(),
+    offer_type: z.enum(['PERCENTAGE', 'FIXED', 'SEASONAL', 'EARLY_BIRD', 'LAST_MINUTE']).default('SEASONAL'),
+    hotel_id: z.string().uuid().nullish(),
+    ...discountFields,
+  })
+  .superRefine(discountRules);
+
+/** A code guests type at checkout. No hotels = valid at every hotel. */
+export const couponFormSchema = z
+  .object({
+    code: z
+      .string({ required_error: 'Enter a code.' })
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9-]{3,30}$/, 'Use 3–30 letters, numbers or dashes.'),
+    description: z.string().trim().max(500).nullish(),
+    hotel_ids: z.array(z.string().uuid()).max(500).default([]),
+    min_booking_amount: z.coerce.number({ invalid_type_error: 'Enter an amount.' }).min(0).default(0),
+    usage_limit: z.coerce.number({ invalid_type_error: 'Enter a number.' }).int().positive().nullish(),
+    usage_limit_per_user: z.coerce.number({ invalid_type_error: 'Enter a number.' }).int().positive().nullish(),
+    ...discountFields,
+  })
+  .superRefine(discountRules);
+
 export const websiteSchema = z.object({
   hotel_id: z.string().uuid(),
   name: z.string().trim().min(2).max(160),

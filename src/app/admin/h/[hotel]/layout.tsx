@@ -25,6 +25,7 @@ const HOTEL_NAV: (Omit<NavItem, 'href'> & { path: string; permission: string })[
   { path: 'pricing', label: 'Pricing & Availability', icon: 'pricing', permission: 'inventory.read' },
   { path: 'rooms', label: 'Rooms', icon: 'rooms', permission: 'rooms.read' },
   { path: 'images', label: 'Photos', icon: 'images', permission: 'hotels.read' },
+  { path: 'offers', label: 'Offers & Coupons', icon: 'offers', permission: 'offers.read' },
   { path: 'reviews', label: 'Reviews', icon: 'reviews', permission: 'reviews.read' },
   { path: 'payments', label: 'Payments', icon: 'payments', permission: 'payments.read' },
   { path: 'website', label: 'Website', icon: 'websites', permission: 'websites.read' },
