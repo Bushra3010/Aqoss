@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Per-website branding.
+ *
+ * The template is shared by every hotel, so its colours are variables. The
+ * website layout writes the tenant's palette into --brand-* at render time
+ * (PRD §5, §22) — no per-hotel CSS, no per-hotel build.
+ */
+:root {
+  /* The AQOSS palette: royal blue for chrome and links, green for booking
+     calls-to-action. A website may override --brand-* with its own colour;
+     every hotel ships with these until someone changes it in the CRM. */
+  --brand-50: #eaf2fe;
+  --brand-100: #d6e4fd;
+  --brand-500: #2563eb;
+  --brand-600: #1450d4;
+  --brand-700: #0b4fd0;
+  --brand-900: #093ea6;
+  --accent: #15803d;
+
+  /* Page background behind the template's white cards. */
+  --page-bg: #f0f5fc;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  border-color: theme('colors.slate.200');
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  /* Wide by design: the hotel template runs a content column beside a booking
+     rail, and both need room. Narrow pages (checkout, auth) cap themselves
+     with their own max-w-* utility, which wins over this component class. */
+  .container-page {
+    @apply mx-auto w-full max-w-[1700px] px-3 sm:px-4 lg:px-6;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm
+           font-semibold transition focus-visible:outline focus-visible:outline-2
+           focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply btn text-white shadow-sm;
+    background-color: var(--brand-700);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--brand-900);
+  }
+
+  .btn-accent {
+    @apply btn text-slate-900 shadow-sm;
+    background-color: var(--accent);
+  }
+  .btn-accent:hover:not(:disabled) {
+    filter: brightness(0.94);
+  }
+
+  .btn-outline {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100;
+  }
+
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-card;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm
+           text-slate-900 placeholder:text-slate-400 focus:border-slate-400
+           focus:outline-none focus:ring-2 focus:ring-slate-900/10;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /*
+   * The booking rail: pinned beside the content from lg up, scrolling within
+   * itself when it is taller than the viewport. Written out rather than
+   * composed from arbitrary utilities so the calc() is unambiguous — Tailwind
+   * arbitrary values need underscores for the spaces calc() requires.
+   */
+  .booking-rail {
+    @apply space-y-4;
+  }
+
+  @media (min-width: 1024px) {
+    .booking-rail {
+      position: sticky;
+      top: 88px;                        /* clears the sticky section tabs */
+      align-self: start;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      overscroll-behavior: contain;     /* do not scroll the page at the ends */
+      padding-right: 4px;               /* breathing room for the scrollbar */
+    }
+  }
+
+  .section-title {
+    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl;
+  }
+
+  .muted {
+    @apply text-sm text-slate-500;
+  }
+}
+
+/* Respect a reduced-motion preference for the sticky/animated bits. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
