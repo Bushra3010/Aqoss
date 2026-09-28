@@ -190,6 +190,7 @@ export class DemoQuery<T = any> implements PromiseLike<Result<T>> {
   private filters: Filter[] = [];
   private orderBy: { column: string; ascending: boolean }[] = [];
   private limitRows: number | null = null;
+  private offsetRows = 0;
   private selectStr = '*';
   private mode: Mode = 'select';
   private payload: Row[] = [];
@@ -276,6 +277,8 @@ export class DemoQuery<T = any> implements PromiseLike<Result<T>> {
   }
 
   range(from: number, to: number) {
+    // Inclusive, like PostgREST: range(0, 999) is the first thousand rows.
+    this.offsetRows = from;
     this.limitRows = to - from + 1;
     return this;
   }
@@ -348,7 +351,9 @@ export class DemoQuery<T = any> implements PromiseLike<Result<T>> {
       });
     }
 
-    if (this.limitRows != null) out = out.slice(0, this.limitRows);
+    if (this.offsetRows || this.limitRows != null) {
+      out = out.slice(this.offsetRows, this.limitRows != null ? this.offsetRows + this.limitRows : undefined);
+    }
     return out;
   }
 

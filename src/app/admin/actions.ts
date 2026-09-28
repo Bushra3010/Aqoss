@@ -12,8 +12,8 @@ import { cancelBooking, setBookingStatus } from '@/services/booking.service';
 import { refundPayment } from '@/services/payment.service';
 import { moderateReview } from '@/services/review.service';
 import { ensureInventory } from '@/services/availability.service';
-import { slugify, toISODate } from '@/lib/utils';
-import { AppError } from '@/lib/api';
+import { formatCurrency, slugify, toISODate } from '@/lib/utils';
+import { AppError, toApiError } from '@/lib/api';
 
 export type AdminAuthState = { error?: string };
 export type ActionState = { error?: string; success?: string };
@@ -321,29 +321,60 @@ export async function setWebsiteStatus(
 // Bookings (PRD §26)
 // ---------------------------------------------------------------------------
 
-export async function adminCancelBooking(bookingId: string, reason: string) {
-  const session = await requirePermission('bookings.cancel');
-  await assertRowInScope(session, 'bookings', bookingId);
-  await cancelBooking({ bookingId, reason, actorId: session.userId });
-  revalidatePath('/admin', 'layout');
+/**
+ * Result of a booking action. Returned rather than thrown: Next.js hides the
+ * message of an error thrown from a server action in production builds, so
+ * staff would otherwise see a generic failure instead of the reason.
+ */
+export type BookingActionResult = { error?: string; message?: string };
+
+function actionError(err: unknown): BookingActionResult {
+  return { error: toApiError(err).message };
+}
+
+export async function adminCancelBooking(bookingId: string, reason: string): Promise<BookingActionResult> {
+  try {
+    const session = await requirePermission('bookings.cancel');
+    await assertRowInScope(session, 'bookings', bookingId);
+    await cancelBooking({ bookingId, reason, actorId: session.userId });
+    // Also refreshes the same booking inside any hotel panel.
+    revalidatePath('/admin', 'layout');
+    return { message: 'Booking cancelled.' };
+  } catch (err) {
+    return actionError(err);
+  }
 }
 
 export async function adminSetBookingStatus(
   bookingId: string,
   status: 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT',
-) {
-  const session = await requirePermission('bookings.checkin');
-  await assertRowInScope(session, 'bookings', bookingId);
-  await setBookingStatus({ bookingId, status, actorId: session.userId });
-  revalidatePath('/admin', 'layout');
+): Promise<BookingActionResult> {
+  try {
+    const session = await requirePermission('bookings.checkin');
+    await assertRowInScope(session, 'bookings', bookingId);
+    await setBookingStatus({ bookingId, status, actorId: session.userId });
+    revalidatePath('/admin', 'layout');
+    return {};
+  } catch (err) {
+    return actionError(err);
+  }
 }
 
-export async function adminRefund(bookingId: string, amount?: number, reason?: string) {
-  const session = await requirePermission('payments.refund');
-  await assertRowInScope(session, 'bookings', bookingId);
-  await refundPayment({ bookingId, amount, reason, actorId: session.userId });
-  // Also refreshes the same booking inside any hotel panel.
-  revalidatePath('/admin', 'layout');
+export async function adminRefund(bookingId: string, amount?: number, reason?: string): Promise<BookingActionResult> {
+  try {
+    const session = await requirePermission('payments.refund');
+    await assertRowInScope(session, 'bookings', bookingId);
+    const result = await refundPayment({ bookingId, amount, reason, actorId: session.userId });
+    revalidatePath('/admin', 'layout');
+    return {
+      message:
+        result.byHotel > 0
+          ? `Refund of ${formatCurrency(result.amount)} recorded. ${formatCurrency(result.byHotel)} was paid at the hotel — hand it back to the guest (cash, UPI or card).`
+          : `Refund of ${formatCurrency(result.amount)} sent back through the payment gateway.`,
+    };
+  } catch (err) {
+    return actionError(err);
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { websiteAdminUrl, websiteHost } from '@/lib/site-url';
 import type { Metadata } from 'next';
 import { getAdminSession, can } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
@@ -68,21 +69,21 @@ export default async function WebsitesPage() {
                 </Link>
               </Td>
               <Td>
-                {primary ? (
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{primary.hostname}</code>
-                ) : (
-                  <span className="text-slate-400">Not mapped</span>
-                )}
+                {/* The platform subdomain always works; a custom domain is extra. */}
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{websiteHost(site.slug)}</code>
+                {primary && primary.hostname !== websiteHost(site.slug) ? (
+                  <p className="mt-1 text-xs text-slate-500">{primary.hostname}</p>
+                ) : null}
               </Td>
               <Td><StatusBadge status={site.status} /></Td>
               <Td align="right">
                 <div className="flex justify-end gap-2">
                   <Link
-                    href={`/?preview_site=${site.slug}`}
+                    href={websiteAdminUrl(site.slug, site.status)}
                     target="_blank"
                     className="text-sm font-medium text-slate-600 hover:text-slate-900"
                   >
-                    Preview
+                    {site.status === 'ACTIVE' ? 'Open website' : 'Preview'}
                   </Link>
                   {can(session, 'websites.write') ? (
                     <WebsiteStatusButtons websiteId={site.id} status={site.status} />

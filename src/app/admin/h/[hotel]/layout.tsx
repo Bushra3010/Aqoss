@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { websiteAdminUrl } from '@/lib/site-url';
 import { notFound, redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { ExternalLink } from 'lucide-react';
@@ -83,11 +84,11 @@ export default async function HotelPanelLayout({
           {hotels.length > 1 ? <HotelSwitcher current={hotel.slug} hotels={hotels} /> : null}
           {hotel.website ? (
             <Link
-              href={`/?preview_site=${hotel.website.slug}`}
+              href={websiteAdminUrl(hotel.website.slug, hotel.website.status)}
               target="_blank"
               className="btn-outline inline-flex items-center gap-1.5"
             >
-              View website <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              {hotel.website.status === 'ACTIVE' ? 'View website' : 'Preview website'} <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           ) : null}
         </div>

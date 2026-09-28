@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { websiteAdminUrl } from '@/lib/site-url';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getAdminSession, can, canAccessHotel } from '@/lib/auth/session';
@@ -61,11 +62,11 @@ export default async function HotelDetailPage({ params }: { params: { id: string
                 <div className="flex items-center gap-3">
                   <StatusBadge status={w.status} />
                   <Link
-                    href={`/?preview_site=${w.slug}`}
+                    href={websiteAdminUrl(w.slug, w.status)}
                     className="text-xs text-slate-500 hover:text-slate-900"
                     target="_blank"
                   >
-                    Preview
+                    {w.status === 'ACTIVE' ? 'Open website' : 'Preview'}
                   </Link>
                 </div>
               </li>

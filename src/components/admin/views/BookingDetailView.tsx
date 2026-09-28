@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import { can, canAccessHotel, type AdminSession } from '@/lib/auth/session';
 import { getBookingDetail } from '@/services/booking.service';
 import { PageHeader, NoAccess } from '@/components/admin/shared';
-import { StatusBadge } from '@/components/ui';
+import { Alert, StatusBadge } from '@/components/ui';
+import { RecordPaymentForm } from '@/components/admin/BookingForms';
+import { paymentMethodLabel } from '@/lib/payment-labels';
 import { BookingActions } from '@/components/admin/BookingActions';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 
@@ -19,11 +21,14 @@ export async function BookingDetailView({
   bookingId,
   hotelId,
   backHref,
+  notice,
 }: {
   session: AdminSession;
   bookingId: string;
   hotelId?: string;
   backHref: string;
+  /** Messages after a create, change or payment (from the URL). */
+  notice?: { created?: string; changed?: string; coupon_dropped?: string; payment?: string };
 }) {
   const booking = await getBookingDetail(bookingId);
   if (!booking) notFound();
@@ -34,6 +39,8 @@ export async function BookingDetailView({
   if (!canAccessHotel(session, b.hotel_id)) return <NoAccess />;
 
   const hotel = Array.isArray(b.hotels) ? b.hotels[0] : b.hotels;
+  // Owed after anything already refunded.
+  const balance = Math.round((Number(b.total_amount) - (Number(b.amount_paid) - Number(b.amount_refunded))) * 100) / 100;
   const invoice = b.invoices?.[0];
 
   return (
@@ -45,10 +52,28 @@ export async function BookingDetailView({
           <>
             <StatusBadge status={b.status} />
             <StatusBadge status={b.payment_status} />
+            {can(session, 'bookings.write') && ['PENDING', 'CONFIRMED', 'CHECKED_IN'].includes(b.status) ? (
+              <Link href={`${backHref}/${b.id}/edit`} className="btn-outline">Edit booking</Link>
+            ) : null}
             <Link href={backHref} className="btn-ghost">Back</Link>
           </>
         }
       />
+
+      {notice?.created || notice?.changed || notice?.payment === 'failed' ? (
+        <div className="mb-6 space-y-3">
+          {notice.created ? <Alert tone="success">Booking {b.reference} created.</Alert> : null}
+          {notice.changed ? (
+            <Alert tone="success">
+              Booking changed and re-priced.
+              {notice.coupon_dropped ? ` Coupon ${notice.coupon_dropped} no longer applied and was removed.` : ''}
+            </Alert>
+          ) : null}
+          {notice.payment === 'failed' ? (
+            <Alert>The booking was saved, but the payment could not be recorded. Record it below.</Alert>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -156,9 +181,12 @@ export async function BookingDetailView({
             {b.payments?.length ? (
               <ul className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs text-slate-500">
                 {b.payments.map((p: any) => (
-                  <li key={p.id}>
-                    {p.provider} · {p.status}
-                    {p.provider_payment_id ? ` · ${p.provider_payment_id}` : ''}
+                  <li key={p.id} className="flex justify-between gap-2">
+                    <span>
+                      {paymentMethodLabel(p)} · {String(p.status).replace(/_/g, ' ').toLowerCase()}
+                      {p.provider_payment_id ? ` · ${p.provider_payment_id}` : ''}
+                    </span>
+                    <span className="tabular-nums">{formatCurrency(Number(p.amount), b.currency)}</span>
                   </li>
                 ))}
               </ul>
@@ -181,6 +209,13 @@ export async function BookingDetailView({
               refund: can(session, 'payments.refund'),
             }}
           />
+
+          {can(session, 'payments.write') && balance > 0 && !['CANCELLED', 'REFUNDED'].includes(b.status) ? (
+            <section className="card p-5">
+              <h2 className="mb-3 text-sm font-semibold text-slate-900">Record a payment</h2>
+              <RecordPaymentForm bookingId={b.id} balance={balance} currency={b.currency} />
+            </section>
+          ) : null}
         </aside>
       </div>
     </>

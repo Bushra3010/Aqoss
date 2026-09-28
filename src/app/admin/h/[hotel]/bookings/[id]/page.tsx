@@ -8,7 +8,13 @@ import { BookingDetailView } from '@/components/admin/views/BookingDetailView';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Booking · Hotel admin' };
 
-export default async function HotelBookingDetail({ params }: { params: { hotel: string; id: string } }) {
+export default async function HotelBookingDetail({
+  params,
+  searchParams,
+}: {
+  params: { hotel: string; id: string };
+  searchParams: { created?: string; changed?: string; coupon_dropped?: string; payment?: string };
+}) {
   const panel = await getHotelPanel(params.hotel);
   if (!panel) notFound();
   if (!can(panel.session, 'bookings.read')) return <NoAccess />;
@@ -19,6 +25,7 @@ export default async function HotelBookingDetail({ params }: { params: { hotel: 
       bookingId={params.id}
       hotelId={panel.hotel.id}
       backHref={hotelPanelPath(panel.hotel.slug, 'bookings')}
+      notice={searchParams}
     />
   );
 }

@@ -8,7 +8,13 @@ import { RoomsView } from '@/components/admin/views/RoomsView';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Rooms · Hotel admin' };
 
-export default async function HotelRoomsPage({ params }: { params: { hotel: string } }) {
+export default async function HotelRoomsPage({
+  params,
+  searchParams,
+}: {
+  params: { hotel: string };
+  searchParams: { q?: string; status?: string };
+}) {
   const panel = await getHotelPanel(params.hotel);
   if (!panel) notFound();
   if (!can(panel.session, 'rooms.read')) return <NoAccess />;
@@ -17,13 +23,11 @@ export default async function HotelRoomsPage({ params }: { params: { hotel: stri
   return (
     <RoomsView
       session={panel.session}
-      searchParams={{}}
+      searchParams={searchParams}
       hotelId={hotel.id}
-      panel={{
-        imagesHref: (id) => hotelPanelPath(hotel.slug, `images/rooms/${id}`),
-        pricingHref: hotelPanelPath(hotel.slug, 'pricing'),
-        newHref: can(panel.session, 'rooms.write') ? hotelPanelPath(hotel.slug, 'rooms/new') : undefined,
-      }}
+      base={hotelPanelPath(hotel.slug, 'rooms')}
+      pricingHref={hotelPanelPath(hotel.slug, 'pricing')}
+      newHref={can(panel.session, 'rooms.write') ? hotelPanelPath(hotel.slug, 'rooms/new') : undefined}
     />
   );
 }

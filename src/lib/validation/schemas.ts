@@ -216,6 +216,46 @@ export const couponFormSchema = z
   })
   .superRefine(discountRules);
 
+/** One room line on a staff booking. */
+export const staffRoomLineSchema = z.object({
+  room_type_id: z.string({ required_error: 'Choose a room.' }).uuid('Choose a room.'),
+  rooms: z.coerce.number().int().min(1, 'At least 1 room.').max(20),
+  adults: z.coerce.number().int().min(1, 'At least 1 adult.').max(40),
+  children: z.coerce.number().int().min(0).max(20).default(0),
+});
+
+/** The stay part of a staff booking — shared by create and change. */
+export const staffStaySchema = z
+  .object({
+    check_in: isoDate,
+    check_out: isoDate,
+    rooms: z.array(staffRoomLineSchema).min(1, 'Add at least one room.').max(10),
+  })
+  .refine((v) => v.check_out > v.check_in, { message: 'Check-out must be after check-in.', path: ['check_out'] });
+
+export const staffGuestSchema = z.object({
+  guest_name: z.string({ required_error: "Enter the guest's name." }).trim().min(2, "Enter the guest's name.").max(120),
+  guest_email: z.string({ required_error: 'Enter an email.' }).trim().email('Enter a valid email.'),
+  guest_phone: z
+    .string({ required_error: 'Enter a phone number.' })
+    .trim()
+    .regex(/^[+0-9 ()-]{7,20}$/, 'Enter a valid phone number.'),
+  guest_address: z.string().trim().max(300).nullish(),
+  special_requests: z.string().trim().max(1000).nullish(),
+});
+
+export const paymentMethodSchema = z.enum(['cash', 'upi', 'card', 'bank_transfer']);
+
+/** A booking made by staff, optionally with money taken there and then. */
+export const staffBookingSchema = z.object({
+  hotel_id: z.string({ required_error: 'Choose a hotel.' }).uuid('Choose a hotel.'),
+  source: z.enum(['CRM', 'PHONE']).default('CRM'),
+  coupon_code: z.string().trim().max(40).nullish(),
+  payment_amount: z.coerce.number({ invalid_type_error: 'Enter an amount.' }).min(0).nullish(),
+  payment_method: paymentMethodSchema.nullish(),
+  payment_reference: z.string().trim().max(100).nullish(),
+});
+
 export const websiteSchema = z.object({
   hotel_id: z.string().uuid(),
   name: z.string().trim().min(2).max(160),

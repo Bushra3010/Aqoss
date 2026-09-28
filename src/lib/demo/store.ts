@@ -37,7 +37,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
   {
     email: 'serenity@aqoss.demo', password: DEMO_PASSWORD, fullName: 'Nisha Pai',
-    mobile: '+91 90000 00006', role: 'property_manager', scopeHotelSlug: 'the-serenity-inn-goa-1',
+    mobile: '+91 90000 00006', role: 'property_manager', scopeHotelSlug: 'the-serenity-inn-goa',
     description: 'Runs The Serenity Inn only — bookings, rooms, pricing, website and payments',
   },
   {
@@ -264,6 +264,7 @@ function seedHistory(t: Tables) {
         status: entry.payment, method: 'card', failure_reason: null,
         raw_response: {}, paid_at: createdAt, created_at: createdAt, updated_at: createdAt,
       });
+      if (entry.payment === 'REFUNDED') seedRefund(t, paymentId, bookingId, total, createdAt);
 
       t.invoices.push({
         id: randomUUID(), booking_id: bookingId, hotel_id: hotel.id,
@@ -469,8 +470,9 @@ function seedBookingVolume(t: Tables) {
       });
 
       if (paid > 0) {
+        const paymentId = randomUUID();
         t.payments.push({
-          id: randomUUID(), booking_id: bookingId, customer_id: customer.id, hotel_id: hotel.id,
+          id: paymentId, booking_id: bookingId, customer_id: customer.id, hotel_id: hotel.id,
           provider: 'mock', provider_order_id: `mock_order_bg_${counter}`,
           provider_payment_id: `mock_pay_bg_${counter}`, provider_signature: null,
           amount: total, tax, discount: 0, currency: 'INR',
@@ -478,6 +480,7 @@ function seedBookingVolume(t: Tables) {
           failure_reason: null, raw_response: {},
           paid_at: createdIso, created_at: createdIso, updated_at: createdIso,
         });
+        if (payment === 'REFUNDED') seedRefund(t, paymentId, bookingId, total, createdIso);
       }
 
       // Reserve the nights so availability reflects these bookings.
@@ -498,3 +501,12 @@ function seedBookingVolume(t: Tables) {
 }
 
 export type { Tables, Row };
+
+/** A refunded seed payment gets the refund row the payments ledger reads. */
+function seedRefund(t: Tables, paymentId: string, bookingId: string, amount: number, at: string) {
+  t.refunds.push({
+    id: randomUUID(), payment_id: paymentId, booking_id: bookingId, amount,
+    reason: 'Cancelled by guest', status: 'REFUNDED', provider_refund_id: `mock_rfnd_${paymentId.slice(0, 8)}`,
+    raw_response: {}, processed_by: null, processed_at: at, created_at: at,
+  });
+}

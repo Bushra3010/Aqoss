@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getAdminSession, can } from '@/lib/auth/session';
 import { listAuditLogs } from '@/services/audit.service';
 import { PageHeader, Table, Td, NoAccess } from '@/components/admin/shared';
+import { FilterForm } from '@/components/admin/FilterForm';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Audit log · AQOSS CRM' };
@@ -18,15 +19,14 @@ export default async function AuditPage({ searchParams }: { searchParams: { enti
     <>
       <PageHeader title="Audit log" description="Who changed what, and when." />
 
-      <form className="mb-4 flex gap-2">
+      <FilterForm className="mb-4 flex gap-2">
         <select name="entity" className="input max-w-xs" defaultValue={searchParams.entity ?? ''}>
           <option value="">All entities</option>
           {['hotels', 'websites', 'bookings', 'payments', 'reviews', 'room_inventory'].map((e) => (
             <option key={e} value={e}>{e.replace(/_/g, ' ')}</option>
           ))}
         </select>
-        <button type="submit" className="btn-outline">Filter</button>
-      </form>
+      </FilterForm>
 
       <Table headers={['When', 'Actor', 'Action', 'Entity', 'Details']} empty="No audit entries.">
         {logs.map((log: any) => {

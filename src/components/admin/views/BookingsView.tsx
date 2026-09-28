@@ -4,6 +4,8 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader, Table, Td } from '@/components/admin/shared';
 import { StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate, todayISO } from '@/lib/utils';
+import { FilterForm } from '@/components/admin/FilterForm';
+import { SearchSelect } from '@/components/admin/SearchSelect';
 
 export interface BookingsSearch {
   q?: string;
@@ -28,17 +30,20 @@ export async function BookingsView({
   searchParams,
   hotelId,
   bookingHref,
+  newHref,
 }: {
   session: AdminSession;
   searchParams: BookingsSearch;
   hotelId?: string;
   bookingHref: (bookingId: string) => string;
+  /** Set when the admin may take bookings. */
+  newHref?: string;
 }) {
   const supabase = createAdminSupabase();
 
-  let hotels: { id: string; name: string }[] = [];
+  let hotels: { id: string; name: string; city: string | null }[] = [];
   if (!hotelId) {
-    let hotelsQuery = supabase.from('hotels').select('id, name').order('name');
+    let hotelsQuery = supabase.from('hotels').select('id, name, city').order('name');
     if (session.hotelScope.length) hotelsQuery = hotelsQuery.in('id', session.hotelScope);
     hotels = ((await hotelsQuery).data ?? []) as typeof hotels;
   }
@@ -71,18 +76,25 @@ export async function BookingsView({
 
   return (
     <>
-      <PageHeader title="Bookings" description={`${bookings.length} booking(s) shown.`} />
+      <PageHeader
+        title="Bookings"
+        description={`${bookings.length} booking(s) shown.`}
+        action={newHref ? <Link href={newHref} className="btn-primary">+ New booking</Link> : null}
+      />
 
-      <form className={`mb-4 grid gap-2 sm:grid-cols-3 ${hotelId ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
+      <FilterForm className={`mb-4 grid gap-2 sm:grid-cols-3 ${hotelId ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
         <input name="q" className="input" placeholder="Reference, name or email" defaultValue={searchParams.q ?? ''} />
 
         {hotelId ? null : (
-          <select name="hotel" className="input" defaultValue={searchParams.hotel ?? ''}>
-            <option value="">All hotels</option>
-            {hotels.map((h) => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
+          <SearchSelect
+            name="hotel"
+            label="Hotel"
+            placeholder="Search hotel or city"
+            allLabel="All hotels"
+            defaultValue={searchParams.hotel ?? ''}
+            options={hotels.map((h) => ({ value: h.id, label: h.name, hint: h.city }))}
+            className=""
+          />
         )}
 
         <select name="status" className="input" defaultValue={searchParams.status ?? ''}>
@@ -102,9 +114,8 @@ export async function BookingsView({
         <input name="from" type="date" className="input" defaultValue={searchParams.from ?? ''} aria-label="Check-in from" />
         <div className="flex gap-2">
           <input name="to" type="date" className="input" defaultValue={searchParams.to ?? ''} aria-label="Check-in to" />
-          <button type="submit" className="btn-outline shrink-0">Filter</button>
         </div>
-      </form>
+      </FilterForm>
 
       <Table
         headers={[

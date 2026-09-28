@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { ImagePlus, Star, X } from 'lucide-react';
 import { Alert, Field } from '@/components/ui';
-import { createPanelRoomType, uploadPanelImage, type PanelActionState } from '@/app/admin/h/actions';
+import { saveRoomType, uploadPanelImage, type PanelActionState } from '@/app/admin/h/actions';
 import { cn } from '@/lib/utils';
 
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
@@ -18,8 +18,30 @@ interface Picked {
   preview: string;
 }
 
+/** Values the form is pre-filled with when editing. */
+export interface RoomTypeValues {
+  id: string;
+  name: string;
+  description: string | null;
+  bed_type: string | null;
+  room_size_sqft: number | null;
+  max_adults: number;
+  max_children: number;
+  max_occupancy: number;
+  base_price: number;
+  discount_percent: number;
+  is_refundable: boolean;
+  is_active: boolean;
+  physical_rooms: number;
+  amenities: string;
+}
+
 /**
- * New room type for one hotel, with its photos.
+ * Create a room type — with its photos — or edit one.
+ *
+ * `hotel` fixes the hotel (a hotel's panel, or any edit); `hotels` instead
+ * offers a picker (the platform Rooms page). Editing leaves photos to the
+ * manager on the room's own page.
  *
  * The room is created first; the photos then go up one per request through
  * the same action the Photos page uses, so a batch of large images never hits
@@ -27,14 +49,23 @@ interface Picked {
  * the photo page it lands on says which ones to retry.
  */
 export function RoomTypeForm({
-  hotelId,
-  hotelName,
+  hotel,
+  hotels,
+  roomType,
+  returnBase,
   cancelHref,
 }: {
-  hotelId: string;
-  hotelName: string;
+  hotel?: { id: string; name: string };
+  hotels?: { id: string; name: string }[];
+  roomType?: RoomTypeValues;
+  returnBase: string;
   cancelHref: string;
 }) {
+  const editing = Boolean(roomType);
+  // The form submits through JavaScript (it uploads photos after saving); until
+  // that is wired up, a click would fall back to a GET with the fields in the URL.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const router = useRouter();
   const [state, setState] = useState<PanelActionState>({});
   const [pending, start] = useTransition();
@@ -93,14 +124,17 @@ export function RoomTypeForm({
     const data = new FormData(event.currentTarget);
 
     start(async () => {
-      setProgress('Creating room…');
-      const result = await createPanelRoomType({}, data);
+      setProgress(editing ? 'Saving…' : 'Creating room…');
+      const result = await saveRoomType({}, data);
       setState(result);
       if (!result.roomTypeId || !result.next) {
         setProgress(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
+
+      const hotelName =
+        hotel?.name ?? hotels?.find((h) => h.id === String(data.get('hotel_id')))?.name ?? '';
 
       // In picked order, so the first photo becomes the cover.
       let failed = 0;
@@ -121,9 +155,24 @@ export function RoomTypeForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <input type="hidden" name="hotel_id" value={hotelId} />
+    <form onSubmit={onSubmit} method="post" className="space-y-6" noValidate>
+      <input type="hidden" name="return_base" value={returnBase} />
+      {roomType ? <input type="hidden" name="room_type_id" value={roomType.id} /> : null}
+      {hotel ? <input type="hidden" name="hotel_id" value={hotel.id} /> : null}
       {state.error ? <Alert>{state.error}</Alert> : null}
+
+      {!hotel && hotels ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <Field label="Hotel" htmlFor="hotel_id" error={err('hotel_id')} hint="The property this room belongs to.">
+            <select id="hotel_id" name="hotel_id" className="input" defaultValue="">
+              <option value="" disabled>Choose a hotel…</option>
+              {hotels.map((h) => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
+          </Field>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-base font-bold text-slate-900">Room</h2>
@@ -131,16 +180,17 @@ export function RoomTypeForm({
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Room name" htmlFor="name" error={err('name')}>
-            <input id="name" name="name" className="input" placeholder="Deluxe Sea View" required maxLength={80} />
+            <input id="name" name="name" className="input" defaultValue={roomType?.name} placeholder="Deluxe Sea View" required maxLength={80} />
           </Field>
           <Field label="Bed type" htmlFor="bed_type" error={err('bed_type')}>
-            <input id="bed_type" name="bed_type" className="input" placeholder="1 King bed" maxLength={60} />
+            <input id="bed_type" name="bed_type" className="input" defaultValue={roomType?.bed_type ?? ''} placeholder="1 King bed" maxLength={60} />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Description" htmlFor="description" error={err('description')}>
               <textarea
                 id="description"
                 name="description"
+                defaultValue={roomType?.description ?? ''}
                 className="input min-h-24"
                 maxLength={2000}
                 placeholder="A bright room on the upper floors with a balcony facing the sea."
@@ -148,7 +198,7 @@ export function RoomTypeForm({
             </Field>
           </div>
           <Field label="Room size (sq ft)" htmlFor="room_size_sqft" error={err('room_size_sqft')}>
-            <input id="room_size_sqft" name="room_size_sqft" type="number" min={50} className="input" placeholder="320" />
+            <input id="room_size_sqft" name="room_size_sqft" type="number" min={50} className="input" defaultValue={roomType?.room_size_sqft ?? ''} placeholder="320" />
           </Field>
           <Field
             label="Amenities"
@@ -156,11 +206,12 @@ export function RoomTypeForm({
             error={err('amenities')}
             hint="Separate with commas. Icons are matched automatically."
           >
-            <input id="amenities" name="amenities" className="input" placeholder="Air conditioning, Wi-Fi, Balcony, Mini bar" />
+            <input id="amenities" name="amenities" className="input" defaultValue={roomType?.amenities} placeholder="Air conditioning, Wi-Fi, Balcony, Mini bar" />
           </Field>
         </div>
       </section>
 
+      {editing ? null : (
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-base font-bold text-slate-900">Photos</h2>
         <p className="text-sm text-slate-500">
@@ -179,7 +230,7 @@ export function RoomTypeForm({
             addPhotos(Array.from(e.dataTransfer.files));
           }}
           className={cn(
-            'mt-4 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-6 text-center transition',
+            'relative mt-4 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-6 text-center transition',
             dragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300',
           )}
         >
@@ -260,18 +311,19 @@ export function RoomTypeForm({
           </ul>
         ) : null}
       </section>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-base font-bold text-slate-900">Guests</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <Field label="Adults" htmlFor="max_adults" error={err('max_adults')}>
-            <input id="max_adults" name="max_adults" type="number" min={1} max={20} defaultValue={2} className="input" required />
+            <input id="max_adults" name="max_adults" type="number" min={1} max={20} defaultValue={roomType?.max_adults ?? 2} className="input" required />
           </Field>
           <Field label="Children" htmlFor="max_children" error={err('max_children')}>
-            <input id="max_children" name="max_children" type="number" min={0} max={20} defaultValue={1} className="input" />
+            <input id="max_children" name="max_children" type="number" min={0} max={20} defaultValue={roomType?.max_children ?? 1} className="input" />
           </Field>
           <Field label="Max guests in total" htmlFor="max_occupancy" error={err('max_occupancy')}>
-            <input id="max_occupancy" name="max_occupancy" type="number" min={1} max={30} defaultValue={3} className="input" required />
+            <input id="max_occupancy" name="max_occupancy" type="number" min={1} max={30} defaultValue={roomType?.max_occupancy ?? 3} className="input" required />
           </Field>
         </div>
       </section>
@@ -283,10 +335,10 @@ export function RoomTypeForm({
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <Field label="Price per night (₹)" htmlFor="base_price" error={err('base_price')}>
-            <input id="base_price" name="base_price" type="number" min={1} step="1" className="input" placeholder="4500" required />
+            <input id="base_price" name="base_price" type="number" min={1} step="1" className="input" defaultValue={roomType?.base_price} placeholder="4500" required />
           </Field>
           <Field label="Discount (%)" htmlFor="discount_percent" error={err('discount_percent')}>
-            <input id="discount_percent" name="discount_percent" type="number" min={0} max={90} defaultValue={0} className="input" />
+            <input id="discount_percent" name="discount_percent" type="number" min={0} max={90} defaultValue={roomType?.discount_percent ?? 0} className="input" />
           </Field>
           <Field
             label="Number of rooms"
@@ -294,29 +346,31 @@ export function RoomTypeForm({
             error={err('physical_rooms')}
             hint="How many of this room the hotel has."
           >
-            <input id="physical_rooms" name="physical_rooms" type="number" min={1} max={500} defaultValue={1} className="input" required />
+            <input id="physical_rooms" name="physical_rooms" type="number" min={1} max={500} defaultValue={roomType?.physical_rooms ?? 1} className="input" required />
           </Field>
         </div>
 
         <div className="mt-4 flex flex-col gap-3 text-sm text-slate-700">
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="is_refundable" defaultChecked className="h-4 w-4 rounded border-slate-300" />
+            <input type="checkbox" name="is_refundable" defaultChecked={roomType?.is_refundable ?? true} className="h-4 w-4 rounded border-slate-300" />
             Free cancellation (refundable)
           </label>
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="is_active" defaultChecked className="h-4 w-4 rounded border-slate-300" />
+            <input type="checkbox" name="is_active" defaultChecked={roomType?.is_active ?? true} className="h-4 w-4 rounded border-slate-300" />
             Show on the website now
           </label>
         </div>
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" className="btn-primary" disabled={pending}>
+        <button type="submit" className="btn-primary" disabled={pending || !ready}>
           {pending
             ? progress ?? 'Creating…'
-            : photos.length
-              ? `Create room type with ${photos.length} photo${photos.length > 1 ? 's' : ''}`
-              : 'Create room type'}
+            : editing
+              ? 'Save changes'
+              : photos.length
+                ? `Create room type with ${photos.length} photo${photos.length > 1 ? 's' : ''}`
+                : 'Create room type'}
         </button>
         <Link href={cancelHref} className="btn-ghost">Cancel</Link>
         {pending && progress ? (

@@ -3,6 +3,7 @@ import 'server-only';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getPaymentAdapter } from '@/lib/payments';
 import { AppError } from '@/lib/api';
+import { money } from '@/lib/utils';
 import { confirmBookingPayment } from '@/services/booking.service';
 import { queueBookingNotifications } from '@/services/notification.service';
 import { recordAudit } from '@/services/audit.service';
@@ -142,78 +143,134 @@ export async function verifyAndConfirm(input: {
   });
 }
 
-/** Refund, in full or in part (PRD §27). */
+/**
+ * Refund part or all of what a booking has paid (PRD §27).
+ *
+ * A booking can have several payments — an online deposit, cash at the desk —
+ * so the refund is spread across them, newest first, never taking more from a
+ * payment than is left on it. Gateway payments are refunded through the
+ * gateway; money taken by staff (`manual`) was never the gateway's to return,
+ * so those parts are recorded as handed back by the hotel.
+ */
 export async function refundPayment(input: {
   bookingId: string;
+  /** Refund only from this payment (the payment page); otherwise newest first. */
+  paymentId?: string;
   amount?: number;
   reason?: string;
   actorId?: string | null;
 }) {
   const supabase = createAdminSupabase();
-  const adapter = getPaymentAdapter();
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, hotel_id, amount_paid, amount_refunded, total_amount')
+    .select('id, hotel_id, status, amount_paid, amount_refunded, total_amount')
     .eq('id', input.bookingId)
     .maybeSingle();
-
   if (!booking) throw new AppError('Booking not found.', 404);
 
-  const { data: payment } = await supabase
+  let paymentsQuery = supabase
     .from('payments')
-    .select('id, provider_payment_id, amount')
-    .eq('booking_id', input.bookingId)
-    .eq('status', 'PAID')
-    .order('paid_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select('id, provider, provider_payment_id, amount, status, paid_at, created_at')
+    .eq('booking_id', booking.id)
+    .in('status', ['PAID', 'PARTIALLY_REFUNDED']);
+  if (input.paymentId) paymentsQuery = paymentsQuery.eq('id', input.paymentId);
 
-  if (!payment?.provider_payment_id) {
-    throw new AppError('No captured payment found for this booking.', 409);
+  const [{ data: payments }, { data: earlier }] = await Promise.all([
+    paymentsQuery,
+    supabase.from('refunds').select('payment_id, amount').eq('booking_id', booking.id),
+  ]);
+
+  const refundedBy = new Map<string, number>();
+  for (const r of earlier ?? []) refundedBy.set(r.payment_id, (refundedBy.get(r.payment_id) ?? 0) + Number(r.amount));
+
+  // Newest money back first.
+  const pool = (payments ?? [])
+    .map((p) => ({ ...p, left: money(Number(p.amount) - (refundedBy.get(p.id) ?? 0)) }))
+    .filter((p) => p.left > 0)
+    .sort((a, b) => String(b.paid_at ?? b.created_at).localeCompare(String(a.paid_at ?? a.created_at)));
+
+  // What can come back: the booking's net paid, and no more than is left on
+  // the payment(s) being refunded from.
+  const refundable = money(
+    Math.min(Number(booking.amount_paid) - Number(booking.amount_refunded), pool.reduce((s, p) => s + p.left, 0)),
+  );
+  const amount = money(input.amount ?? refundable);
+  if (!(amount > 0) || amount > refundable) {
+    throw new AppError(
+      refundable > 0
+        ? `Refund must be more than 0 and at most ${refundable}.`
+        : input.paymentId
+          ? 'Nothing is left to refund on this payment.'
+          : 'Nothing is left to refund on this booking.',
+      422,
+    );
   }
 
-  const refundable = Number(booking.amount_paid) - Number(booking.amount_refunded);
-  const amount = input.amount ?? refundable;
+  const adapter = getPaymentAdapter();
+  let refunded = 0;
+  const parts: { payment_id: string; amount: number; by: 'gateway' | 'hotel' }[] = [];
 
-  if (amount <= 0 || amount > refundable) {
-    throw new AppError(`Refund must be between 0 and ${refundable}.`, 422);
+  try {
+    for (const payment of pool) {
+      const part = money(Math.min(payment.left, amount - refunded));
+      if (part <= 0) break;
+
+      let status: 'REFUNDED' | 'PENDING' = 'REFUNDED';
+      let providerRefundId: string | null = null;
+      let raw: unknown = { returned_by: 'hotel' };
+
+      if (payment.provider !== 'manual') {
+        if (!payment.provider_payment_id) {
+          throw new AppError('An online payment on this booking has no gateway reference to refund against.', 409);
+        }
+        const result = await adapter.refund({
+          providerPaymentId: payment.provider_payment_id,
+          amount: part,
+          reason: input.reason,
+        });
+        status = result.status === 'REFUNDED' ? 'REFUNDED' : 'PENDING';
+        providerRefundId = result.refundId;
+        raw = result.raw;
+      }
+
+      await supabase.from('refunds').insert({
+        payment_id: payment.id,
+        booking_id: booking.id,
+        amount: part,
+        reason: input.reason ?? null,
+        status,
+        provider_refund_id: providerRefundId,
+        raw_response: raw,
+        processed_by: input.actorId ?? null,
+        processed_at: new Date().toISOString(),
+      });
+      await supabase
+        .from('payments')
+        .update({ status: part >= payment.left ? 'REFUNDED' : 'PARTIALLY_REFUNDED' })
+        .eq('id', payment.id);
+
+      refunded = money(refunded + part);
+      parts.push({ payment_id: payment.id, amount: part, by: payment.provider === 'manual' ? 'hotel' : 'gateway' });
+    }
+  } finally {
+    // Whatever went through is recorded on the booking, even if a later part
+    // failed — the money has moved.
+    if (refunded > 0) {
+      const totalRefunded = money(Number(booking.amount_refunded) + refunded);
+      const fullyRefunded = totalRefunded >= Number(booking.amount_paid);
+      await supabase
+        .from('bookings')
+        .update({
+          amount_refunded: totalRefunded,
+          payment_status: fullyRefunded ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+          // A refunded booking is over — unless the guest is (or was) in the room.
+          ...(fullyRefunded && ['PENDING', 'CONFIRMED', 'CANCELLED'].includes(booking.status) ? { status: 'REFUNDED' } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+    }
   }
-
-  const result = await adapter.refund({
-    providerPaymentId: payment.provider_payment_id,
-    amount,
-    reason: input.reason,
-  });
-
-  await supabase.from('refunds').insert({
-    payment_id: payment.id,
-    booking_id: booking.id,
-    amount: result.amount,
-    reason: input.reason ?? null,
-    status: result.status === 'REFUNDED' ? 'REFUNDED' : 'PENDING',
-    provider_refund_id: result.refundId,
-    raw_response: result.raw,
-    processed_by: input.actorId ?? null,
-    processed_at: new Date().toISOString(),
-  });
-
-  const totalRefunded = Number(booking.amount_refunded) + result.amount;
-  const fullyRefunded = totalRefunded >= Number(booking.amount_paid);
-
-  await supabase
-    .from('bookings')
-    .update({
-      amount_refunded: totalRefunded,
-      payment_status: fullyRefunded ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
-      status: fullyRefunded ? 'REFUNDED' : undefined,
-    })
-    .eq('id', booking.id);
-
-  await supabase
-    .from('payments')
-    .update({ status: fullyRefunded ? 'REFUNDED' : 'PARTIALLY_REFUNDED' })
-    .eq('id', payment.id);
 
   await queueBookingNotifications(booking.id, 'refund.processed');
   await recordAudit({
@@ -222,8 +279,78 @@ export async function refundPayment(input: {
     entityId: booking.id,
     hotelId: booking.hotel_id,
     actorId: input.actorId ?? null,
-    newValue: { amount: result.amount, refund_id: result.refundId },
+    newValue: { amount: refunded, parts },
   });
 
-  return result;
+  return {
+    amount: refunded,
+    byHotel: money(parts.filter((p) => p.by === 'hotel').reduce((s, p) => s + p.amount, 0)),
+  };
+}
+
+export const MANUAL_PAYMENT_METHODS = ['cash', 'upi', 'card', 'bank_transfer'] as const;
+export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
+
+/**
+ * Money taken by staff — cash or UPI at the desk, a card machine, a bank
+ * transfer. Goes through the same `confirm_booking_payment` step as a gateway
+ * payment, so a booking paid in full is confirmed, invoiced and notified the
+ * same way; a part-payment just raises `amount_paid`.
+ */
+export async function recordManualPayment(input: {
+  bookingId: string;
+  amount: number;
+  method: ManualPaymentMethod;
+  reference?: string | null;
+  actorId: string;
+}): Promise<{ booking: Booking; paymentId: string }> {
+  const supabase = createAdminSupabase();
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('id, hotel_id, customer_id, status, total_amount, amount_paid, amount_refunded, currency')
+    .eq('id', input.bookingId)
+    .maybeSingle();
+  if (!booking) throw new AppError('Booking not found.', 404);
+  if (['CANCELLED', 'REFUNDED'].includes(booking.status)) {
+    throw new AppError('This booking has been cancelled.', 409);
+  }
+
+  // What is still owed after anything already refunded.
+  const balance = money(Number(booking.total_amount) - (Number(booking.amount_paid) - Number(booking.amount_refunded)));
+  if (balance <= 0) throw new AppError('Nothing is due on this booking.', 409);
+  if (!(input.amount > 0) || input.amount > balance) {
+    throw new AppError(`Enter an amount up to the balance due (${balance}).`, 400);
+  }
+
+  const { data: payment, error } = await supabase
+    .from('payments')
+    .insert({
+      booking_id: booking.id,
+      customer_id: booking.customer_id,
+      hotel_id: booking.hotel_id,
+      provider: 'manual',
+      provider_payment_id: input.reference || null,
+      method: input.method,
+      amount: input.amount,
+      currency: booking.currency,
+      status: 'PENDING',
+      raw_response: { recorded_by: input.actorId },
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+
+  const updated = await confirmBookingPayment({ bookingId: booking.id, paymentId: payment.id, amount: input.amount });
+
+  await recordAudit({
+    action: 'payment.recorded',
+    entity: 'payments',
+    entityId: payment.id,
+    hotelId: booking.hotel_id,
+    actorId: input.actorId,
+    newValue: { amount: input.amount, method: input.method, reference: input.reference ?? null },
+  });
+
+  return { booking: updated, paymentId: payment.id };
 }

@@ -26,18 +26,21 @@ export function BookingActions({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [mode, setMode] = useState<'none' | 'cancel' | 'refund'>('none');
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState(refundable);
 
-  function run(fn: () => Promise<void>) {
+  function run(fn: () => Promise<{ error?: string; message?: string }>) {
     setError(null);
+    setMessage(null);
     start(async () => {
-      try {
-        await fn();
+      const result = await fn().catch(() => ({ error: 'That action could not be completed.' }) as { error?: string; message?: string });
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setMessage(result.message ?? null);
         setMode('none');
-      } catch (err) {
-        setError((err as Error).message || 'That action could not be completed.');
       }
     });
   }
@@ -51,6 +54,11 @@ export function BookingActions({
       {error ? (
         <div className="mt-3">
           <Alert>{error}</Alert>
+        </div>
+      ) : null}
+      {message ? (
+        <div className="mt-3">
+          <Alert tone="success">{message}</Alert>
         </div>
       ) : null}
 
@@ -146,6 +154,10 @@ export function BookingActions({
                 placeholder="Reason"
                 aria-label="Refund reason"
               />
+              <p className="text-xs text-slate-500">
+                Online payments go back through the gateway; money taken at the hotel must be handed back by you.
+                A refund doesn&apos;t lower the booking&apos;s price — for a shorter stay, edit the booking first.
+              </p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -161,7 +173,14 @@ export function BookingActions({
               </div>
             </div>
           ) : (
-            <button type="button" className="btn-outline w-full" onClick={() => setMode('refund')}>
+            <button
+              type="button"
+              className="btn-outline w-full"
+              onClick={() => {
+                setAmount(refundable);
+                setMode('refund');
+              }}
+            >
               Refund {formatCurrency(refundable, currency)}
             </button>
           )

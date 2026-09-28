@@ -4,6 +4,8 @@ import { getInventoryCalendar } from '@/services/availability.service';
 import { PageHeader } from '@/components/admin/shared';
 import { InventoryEditor } from '@/components/admin/InventoryEditor';
 import { todayISO, toISODate } from '@/lib/utils';
+import { FilterForm } from '@/components/admin/FilterForm';
+import { SearchSelect } from '@/components/admin/SearchSelect';
 
 export interface InventorySearch {
   hotel?: string;
@@ -26,9 +28,9 @@ export async function InventoryView({
 }) {
   const supabase = createAdminSupabase();
 
-  let hotels: { id: string; name: string }[] = [];
+  let hotels: { id: string; name: string; city: string | null }[] = [];
   if (!lockedHotelId) {
-    let hotelsQuery = supabase.from('hotels').select('id, name').order('name');
+    let hotelsQuery = supabase.from('hotels').select('id, name, city').order('name');
     if (session.hotelScope.length) hotelsQuery = hotelsQuery.in('id', session.hotelScope);
     hotels = ((await hotelsQuery).data ?? []) as typeof hotels;
   }
@@ -60,13 +62,16 @@ export async function InventoryView({
         description="Allocation per night. A room type is only sellable on nights that have an inventory row."
       />
 
-      <form className="mb-5 flex flex-wrap gap-2">
+      <FilterForm className="mb-5 flex flex-wrap gap-2">
         {lockedHotelId ? null : (
-          <select name="hotel" className="input max-w-xs" defaultValue={hotelId ?? ''}>
-            {hotels.map((h) => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
+          <SearchSelect
+            name="hotel"
+            label="Hotel"
+            placeholder="Search hotel or city"
+            defaultValue={hotelId ?? ''}
+            options={hotels.map((h) => ({ value: h.id, label: h.name, hint: h.city }))}
+            className="w-full sm:w-72"
+          />
         )}
         <input name="from" type="date" className="input max-w-[10rem]" defaultValue={from} aria-label="From date" />
         <select name="days" className="input max-w-[8rem]" defaultValue={String(days)}>
@@ -74,8 +79,7 @@ export async function InventoryView({
           <option value="14">14 nights</option>
           <option value="31">31 nights</option>
         </select>
-        <button type="submit" className="btn-outline">Show</button>
-      </form>
+      </FilterForm>
 
       <InventoryEditor
         roomTypes={(roomTypesResult.data ?? []) as { id: string; name: string }[]}

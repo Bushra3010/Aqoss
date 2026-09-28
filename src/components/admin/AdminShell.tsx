@@ -50,11 +50,18 @@ export async function AdminShell({
       <DemoBanner />
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-[250px] shrink-0 border-r border-slate-200 lg:block">
+        <aside className="relative hidden w-[250px] shrink-0 border-r border-slate-200 lg:block">
           <AdminSidebar main={main} admin={admin} panel={panel} />
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        {/*
+         * `relative` makes this column the containing block for anything
+         * absolutely positioned inside it (e.g. the `sr-only` file inputs).
+         * Without it they are placed against <body> at their offset in the
+         * scrolled content, which makes the document itself taller than the
+         * screen — and jumping to them scrolls the whole shell off the top.
+         */}
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto">
           <AdminTopBar
             user={{ name: session.fullName ?? session.email ?? 'Admin', role: session.roleName }}
             notifications={unread}

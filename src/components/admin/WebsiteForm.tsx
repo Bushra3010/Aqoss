@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { Alert, Field } from '@/components/ui';
 import { saveWebsite, type ActionState } from '@/app/admin/actions';
+import { platformHost } from '@/lib/site-url';
 
 const initial: ActionState = {};
 
@@ -77,7 +78,7 @@ export function WebsiteForm({
           <Field
             label="Slug"
             htmlFor="slug"
-            hint="Also the dev subdomain: <slug>.localhost:3000"
+            hint={`The website's address: <slug>.${platformHost}`}
           >
             <input
               id="slug"
@@ -130,8 +131,9 @@ export function WebsiteForm({
       <section className="border-t border-slate-200 pt-6">
         <h2 className="text-sm font-semibold text-slate-900">Domains</h2>
         <p className="mt-1 text-xs text-slate-500">
-          One per line. The first is the primary. In development use
-          <code className="mx-1 rounded bg-slate-100 px-1">slug.localhost</code>.
+          Optional. The site is always at
+          <code className="mx-1 rounded bg-slate-100 px-1">&lt;slug&gt;.{platformHost}</code>
+          — add a hotel&apos;s own domain here, one per line, first is primary.
         </p>
         <div className="mt-3">
           <Field label="Hostnames" htmlFor="domains">
@@ -140,7 +142,7 @@ export function WebsiteForm({
               name="domains"
               className="input min-h-24 font-mono text-xs"
               defaultValue={domains}
-              placeholder={'www.hotela.com\nhotela.com\nhotel-a.localhost'}
+              placeholder={'www.hotela.com\nhotela.com'}
             />
           </Field>
         </div>

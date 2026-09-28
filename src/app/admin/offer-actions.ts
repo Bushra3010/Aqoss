@@ -6,7 +6,7 @@ import { requirePermission, canAccessHotel, type AdminSession } from '@/lib/auth
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/api';
 import { couponFormSchema, offerFormSchema } from '@/lib/validation/schemas';
-import { createCoupon, createOffer, setCouponActive, setOfferActive } from '@/services/offer.service';
+import { createCoupon, createOffer, deleteCoupon, deleteOffer, setCouponActive, setOfferActive } from '@/services/offer.service';
 
 export type OfferActionState = { error?: string; fieldErrors?: Record<string, string> };
 
@@ -131,6 +131,46 @@ export async function toggleCoupon(couponId: string, isActive: boolean): Promise
     await setCouponActive(couponId, isActive, session.userId);
     revalidatePath('/', 'layout');
     return {};
+  } catch (err) {
+    return toState(err);
+  }
+}
+
+export async function deleteCouponAction(couponId: string): Promise<OfferActionState & { deleted?: string }> {
+  try {
+    const session = await requirePermission('offers.write');
+    const { data: coupon } = await createAdminSupabase()
+      .from('coupons')
+      .select('hotel_ids')
+      .eq('id', couponId)
+      .maybeSingle();
+    if (!coupon) throw new AppError('That coupon no longer exists.', 404);
+    // Same rule as pausing: a hotel-scoped admin may only touch their own.
+    assertHotelsInScope(session, (coupon.hotel_ids ?? []) as string[]);
+
+    const code = await deleteCoupon(couponId, session.userId);
+    revalidatePath('/', 'layout');
+    return { deleted: code };
+  } catch (err) {
+    return toState(err);
+  }
+}
+
+export async function deleteOfferAction(offerId: string): Promise<OfferActionState & { deleted?: string }> {
+  try {
+    const session = await requirePermission('offers.write');
+    const { data: offer } = await createAdminSupabase()
+      .from('offers')
+      .select('hotel_id')
+      .eq('id', offerId)
+      .maybeSingle();
+    if (!offer) throw new AppError('That offer no longer exists.', 404);
+    // Same rule as pausing: platform-wide offers belong to platform admins.
+    assertHotelsInScope(session, offer.hotel_id ? [offer.hotel_id] : []);
+
+    const title = await deleteOffer(offerId, session.userId);
+    revalidatePath('/', 'layout');
+    return { deleted: title };
   } catch (err) {
     return toState(err);
   }

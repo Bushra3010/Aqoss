@@ -5,6 +5,7 @@ import { isDemoMode } from '@/lib/env';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { DEMO_ACCOUNTS } from '@/lib/demo/store';
 import { formatCurrency } from '@/lib/utils';
+import { websiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Demo directory · AQOSS' };
@@ -85,7 +86,7 @@ export default async function DemoIndexPage() {
                     />
                     <span className="min-w-0">
                       <a
-                        href={`http://${site.slug}.localhost:3000`}
+                        href={websiteUrl(site.slug)}
                         className="font-medium text-slate-900 hover:underline"
                       >
                         {hotel.name}
@@ -96,7 +97,7 @@ export default async function DemoIndexPage() {
                         {from ? ` · from ${formatCurrency(from, hotel.currency)}` : ''}
                       </span>
                       <code className="mt-1 block truncate text-[11px] text-slate-400">
-                        {site.slug}.localhost:3000
+                        {websiteUrl(site.slug).replace(/^https?:\/\//, '')}
                       </code>
                     </span>
                   </span>

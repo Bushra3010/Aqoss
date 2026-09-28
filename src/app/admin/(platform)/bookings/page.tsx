@@ -16,6 +16,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
       session={session!}
       searchParams={searchParams}
       bookingHref={(id) => `/admin/bookings/${id}`}
+      newHref={can(session, 'bookings.write') ? '/admin/bookings/new' : undefined}
     />
   );
 }

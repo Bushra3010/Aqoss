@@ -31,6 +31,12 @@ export async function quoteBooking(input: {
   transport?: TransportSelection[];
   couponCode?: string | null;
   customerId?: string | null;
+  /**
+   * Price the stay without judging availability. Only for changing an
+   * existing booking: its own rooms still count as taken here, so the check
+   * is left to `modify_booking`, which releases them first.
+   */
+  pricesOnly?: boolean;
 }): Promise<{
   breakdown: PriceBreakdown;
   availability: AvailabilityResult[];
@@ -66,7 +72,7 @@ export async function quoteBooking(input: {
     if (!match) {
       throw new AppError('Selected dates are unavailable for this room.', 409);
     }
-    if (!match.is_available || match.available_rooms < requested.rooms) {
+    if (!input.pricesOnly && (!match.is_available || match.available_rooms < requested.rooms)) {
       throw new AppError(
         match.available_rooms > 0
           ? `Only ${match.available_rooms} ${match.name} left for these dates.`

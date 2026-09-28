@@ -5,6 +5,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { hotelPanelPath } from '@/lib/admin/hotel-panel';
 import { PageHeader, Table, Td, NoAccess } from '@/components/admin/shared';
 import { StatusBadge } from '@/components/ui';
+import { FilterForm } from '@/components/admin/FilterForm';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Hotels · AQOSS CRM' };
@@ -44,7 +45,7 @@ export default async function HotelsPage({
         }
       />
 
-      <form className="mb-4 flex flex-wrap gap-2">
+      <FilterForm className="mb-4 flex flex-wrap gap-2">
         <input
           name="q"
           className="input max-w-xs"
@@ -58,8 +59,7 @@ export default async function HotelsPage({
           <option value="INACTIVE">Inactive</option>
           <option value="ARCHIVED">Archived</option>
         </select>
-        <button type="submit" className="btn-outline">Filter</button>
-      </form>
+      </FilterForm>
 
       <Table
         headers={['Hotel', 'Location', 'Status', 'Websites', 'Room types', { label: '', align: 'right' }]}

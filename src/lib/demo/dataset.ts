@@ -9,6 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { websiteHost } from '@/lib/site-url';
 
 export type Row = Record<string, any>;
 export type Tables = Record<string, Row[]>;
@@ -235,7 +236,7 @@ function seedRbac(t: Tables) {
     booking_manager: [
       'dashboard.read', 'bookings.read', 'bookings.write', 'bookings.cancel', 'bookings.checkin',
       'customers.read', 'customers.write', 'rooms.read', 'inventory.read', 'payments.read',
-      'transport.read', 'hotels.read', 'leads.read', 'leads.write',
+      'transport.read', 'hotels.read', 'leads.read', 'leads.write', 'payments.write',
     ],
     hotel_manager: [
       'dashboard.read', 'hotels.read', 'hotels.write', 'websites.read', 'websites.write',
@@ -259,7 +260,7 @@ function seedRbac(t: Tables) {
       'rooms.read', 'rooms.write', 'inventory.read', 'inventory.write', 'pricing.read',
       'pricing.write', 'bookings.read', 'bookings.write', 'bookings.cancel', 'bookings.checkin',
       'payments.read', 'payments.refund', 'transport.read', 'reviews.read', 'reviews.moderate',
-      'reports.read', 'leads.read', 'leads.write', 'offers.read', 'offers.write',
+      'reports.read', 'leads.read', 'leads.write', 'offers.read', 'offers.write', 'payments.write',
     ],
   };
 
@@ -344,7 +345,9 @@ function seedCoupons(t: Tables) {
 function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   const [city, state, lat, lng] = pick(CITIES, index);
   const name = `${pick(PREFIXES, index)} ${pick(NAMES, index)} ${pick(SUFFIXES, index + 3)}`;
-  const slug = `${slugify(name)}-${slugify(city)}-${index + 1}`;
+  // `<hotel>-<city>` becomes the website subdomain; numbered only if it repeats.
+  const baseSlug = `${slugify(name)}-${slugify(city)}`;
+  const slug = t.hotels.some((h) => h.slug === baseSlug) ? `${baseSlug}-${index + 1}` : baseSlug;
   const stars = 3 + Math.floor(rand(index + 1) * 3) * 0.5;
   const basePrice = 2200 + Math.floor(rand(index + 7) * 12) * 450;
 
@@ -431,8 +434,8 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   });
 
   t.website_domains.push(
-    { id: randomUUID(), website_id: websiteId, hostname: `${slug}.localhost`, is_primary: true, is_verified: true, verified_at: now(), created_at: now() },
-    { id: randomUUID(), website_id: websiteId, hostname: `${slug}.example.com`, is_primary: false, is_verified: false, verified_at: null, created_at: now() },
+    // The platform subdomain, e.g. the-serenity-inn-goa.aqoss.com (or .localhost in dev).
+    { id: randomUUID(), website_id: websiteId, hostname: websiteHost(slug), is_primary: true, is_verified: true, verified_at: now(), created_at: now() },
   );
 
   // ---- room types, rooms, inventory, rates ------------------------------

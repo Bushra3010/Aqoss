@@ -99,7 +99,7 @@ export function ImageManager({
             upload(Array.from(e.dataTransfer.files));
           }}
           className={cn(
-            'flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition',
+            'relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition',
             dragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-white',
           )}
         >

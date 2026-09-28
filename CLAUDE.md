@@ -106,7 +106,10 @@ audit, because those pages are not hotel-filtered yet. Offers are: a scoped admi
 hotels' offers and coupons plus platform-wide ones, and may only create or pause ones limited to
 their own hotels (`offer-actions.ts`).
 
-Offers are promotions shown on the website; only coupons change the price at checkout.
+Offers are promotions shown on the website; only coupons change the price at checkout. A coupon
+can be deleted only while unused (`deleteCoupon`): deleting a used one would cascade away its
+`coupon_redemptions`, so used coupons are paused instead. Offers can always be deleted
+(`deleteOffer`) — nothing in a booking points at them; linked coupons just lose `offer_id`.
 
 **Leads** are abandoned bookings: PENDING and unpaid for longer than `BOOKING_HOLD_MINUTES`. The
 booking row is the lead; `booking_leads` only stores follow-up (status, notes). CONVERTED is
@@ -121,6 +124,32 @@ from `/api/demo-files/…`.
 **Room types** are created by `createRoomType` (`room-type.service.ts`), which also adds the
 physical rooms (next free floor, `<floor><nn>`) and a year of `room_inventory`. A room type with
 no inventory rows shows on the website but can never be booked, so never insert one without it.
+`updateRoomType` edits one in place (the slug never changes, so links survive); lowering the room
+count removes only free rooms, and sold nights keep their allocation because
+`ensure_room_inventory` never drops below booked + blocked. Both the platform (`/admin/rooms/<id>`)
+and hotel panels edit through `RoomTypeEditView` + `saveRoomType`. There is no delete: hide a room
+type with "Show on the website" instead, so past bookings keep their room.
+
+**Staff bookings** (`booking-actions.ts`) go through the website's engine: `createStaffBooking` →
+`createBooking` → `create_booking_transaction`, source `PHONE` or `CRM`. Changing dates, rooms or
+party size is `modifyBooking` → `modify_booking` (migration 14), which releases the booking's own
+nights *before* checking the new ones — so `quoteModification` prices with `pricesOnly` and never
+judges availability itself. The form's live price calls the same functions the save does; keep it
+that way so the preview can't disagree with the result. Money taken at the desk is
+`recordManualPayment` (provider `manual`) → `confirm_booking_payment`, which only promotes PENDING
+to CONFIRMED — a checked-in guest paying their balance stays checked in.
+
+**Money on a booking**: `amount_paid` is everything ever captured (payments `PAID`,
+`PARTIALLY_REFUNDED` or `REFUNDED`); refunds live separately in `amount_refunded`. What is owed is
+`total − (amount_paid − amount_refunded)` — never compare `amount_paid` with the total on its own.
+`refundPayment` spreads a refund across the booking's payments newest first; gateway payments are
+refunded through the adapter, `manual` (desk) payments are recorded as handed back by the hotel.
+Payments are their own section: each has a page (`PaymentDetailView`, `/admin/payments/<id>`) with
+its refunds and a refund-from-this-payment form (`refundPayment({ paymentId })`), and "Record
+payment" (`/admin/payments/new`) finds a booking that still owes via `findBookingsWithBalance`.
+The Payments page totals come from `paymentTotals` (every matching payment, read in pages of
+1000), not from the 200 rows it lists. Booking actions return `{ error }` instead of throwing —
+Next hides thrown server-action messages in production.
 
 **Dates**: `YYYY-MM-DD` strings are local calendar days. Never turn a `Date` back into one with
 `toISOString()` — east of UTC that is the previous day, which once saved every admin price a
@@ -138,6 +167,16 @@ Stat tiles show a running total with the selected window's movement beside it. `
 `report.service.ts` returns `changePercent: null` when the baseline is too small for the
 percentage to mean anything (over ±300%), and `StatCard` renders that as an em dash rather than
 inventing a number.
+
+## Website addresses
+
+Every website is served at `<website-slug>.<NEXT_PUBLIC_ROOT_DOMAIN>` — in production
+`the-serenity-inn-goa.aqoss.com`, in dev `the-serenity-inn-goa.localhost:3000`. `resolveTenantByHost`
+maps the subdomain back by slug, so a new website needs no DNS or `website_domains` row, only the
+wildcard `*.aqoss.com` record. Build links with `websiteUrl()` / `websiteAdminUrl()` in
+`src/lib/site-url.ts`, never `?preview_site=` by hand: unpublished sites preview on the main domain
+because the admin's session cookie does not reach the subdomains. `website_domains` is for a
+hotel's own custom domain.
 
 ## Hotel website template
 

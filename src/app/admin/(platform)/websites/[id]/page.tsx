@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { websiteAdminUrl } from '@/lib/site-url';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getAdminSession, can } from '@/lib/auth/session';
@@ -43,8 +44,8 @@ export default async function WebsiteDetailPage({ params }: { params: { id: stri
         action={
           <>
             <StatusBadge status={w.status} />
-            <Link href={`/?preview_site=${w.slug}`} target="_blank" className="btn-outline">
-              Preview
+            <Link href={websiteAdminUrl(w.slug, w.status)} target="_blank" className="btn-outline">
+              {w.status === 'ACTIVE' ? 'Open website' : 'Preview'}
             </Link>
             <Link href="/admin/websites" className="btn-ghost">Back</Link>
           </>

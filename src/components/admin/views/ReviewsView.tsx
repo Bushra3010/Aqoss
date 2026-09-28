@@ -2,6 +2,7 @@ import { can, type AdminSession } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader } from '@/components/admin/shared';
 import { ReviewModeration } from '@/components/admin/ReviewModeration';
+import { FilterForm } from '@/components/admin/FilterForm';
 
 /** Review moderation and replies (PRD §19), optionally for one hotel. */
 export async function ReviewsView({
@@ -32,14 +33,13 @@ export async function ReviewsView({
         description="Only guests with a completed stay can leave one. Approve to publish, and reply publicly."
       />
 
-      <form className="mb-4 flex gap-2">
+      <FilterForm className="mb-4 flex gap-2">
         <select name="status" className="input max-w-[12rem]" defaultValue={searchParams.status ?? 'PENDING'}>
           {['PENDING', 'APPROVED', 'HIDDEN', 'DELETED'].map((s) => (
             <option key={s} value={s}>{s.toLowerCase()}</option>
           ))}
         </select>
-        <button type="submit" className="btn-outline">Filter</button>
-      </form>
+      </FilterForm>
 
       <ReviewModeration
         reviews={(data ?? []) as never[]}

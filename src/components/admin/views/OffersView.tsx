@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { can, canAccessHotel, type AdminSession } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader, Table, Td } from '@/components/admin/shared';
-import { ActiveToggle } from '@/components/admin/ActiveToggle';
+import { ActiveToggle, DeleteCouponButton, DeleteOfferButton } from '@/components/admin/ActiveToggle';
 import { StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -103,7 +103,12 @@ export async function OffersView({
               </Td>
               <Td><StatusBadge status={o.is_active ? 'ACTIVE' : 'INACTIVE'} /></Td>
               <Td align="right">
-                {mayEdit(o.hotel_id ? [o.hotel_id] : []) ? <ActiveToggle kind="offer" id={o.id} active={o.is_active} /> : null}
+                {mayEdit(o.hotel_id ? [o.hotel_id] : []) ? (
+                  <span className="flex items-start justify-end gap-4 whitespace-nowrap">
+                    <ActiveToggle kind="offer" id={o.id} active={o.is_active} />
+                    <DeleteOfferButton id={o.id} title={o.title} />
+                  </span>
+                ) : null}
               </Td>
             </tr>
           );
@@ -127,13 +132,18 @@ export async function OffersView({
             </Td>
             <Td>{Number(c.min_booking_amount) > 0 ? formatCurrency(Number(c.min_booking_amount)) : '—'}</Td>
             <Td align="right">
-              {c.used_count}
+              {Number(c.used_count) || 0}
               {c.usage_limit ? ` / ${c.usage_limit}` : ''}
             </Td>
             <Td className="whitespace-nowrap">{c.valid_until ? formatDate(new Date(c.valid_until)) : 'No expiry'}</Td>
             <Td><StatusBadge status={c.is_active ? 'ACTIVE' : 'INACTIVE'} /></Td>
             <Td align="right">
-              {mayEdit(c.hotel_ids ?? []) ? <ActiveToggle kind="coupon" id={c.id} active={c.is_active} /> : null}
+              {mayEdit(c.hotel_ids ?? []) ? (
+                <span className="flex items-start justify-end gap-4 whitespace-nowrap">
+                  <ActiveToggle kind="coupon" id={c.id} active={c.is_active} />
+                  <DeleteCouponButton id={c.id} code={c.code} uses={Number(c.used_count) || 0} />
+                </span>
+              ) : null}
             </Td>
           </tr>
         ))}

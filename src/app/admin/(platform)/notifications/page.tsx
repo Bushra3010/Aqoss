@@ -4,6 +4,7 @@ import { getAdminSession, can } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader, NoAccess, StatTile } from '@/components/admin/shared';
 import { cn } from '@/lib/utils';
+import { FilterForm } from '@/components/admin/FilterForm';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Notifications · AQOSS CRM' };
@@ -69,15 +70,14 @@ export default async function NotificationsPage({
         <StatTile label="Failed" value={failed.count ?? 0} hint="After 3 attempts" />
       </div>
 
-      <form className="mb-4 flex gap-2">
+      <FilterForm className="mb-4 flex gap-2">
         <select name="state" className="input max-w-[12rem]" defaultValue={searchParams.state ?? ''}>
           <option value="">All states</option>
           {['QUEUED', 'SENT', 'FAILED', 'SKIPPED'].map((s) => (
             <option key={s} value={s}>{s.toLowerCase()}</option>
           ))}
         </select>
-        <button type="submit" className="btn-outline">Filter</button>
-      </form>
+      </FilterForm>
 
       <ul className="space-y-2">
         {rows.map((row) => {

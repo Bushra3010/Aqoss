@@ -6,7 +6,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/api';
 import { roomTypeSchema } from '@/lib/validation/schemas';
 import { hotelPanelPath } from '@/lib/admin/hotel-panel';
-import { createRoomType } from '@/services/room-type.service';
+import { createRoomType, updateRoomType } from '@/services/room-type.service';
 import { LEAD_STATUSES, updateLead, type LeadStatus } from '@/services/lead.service';
 import {
   deleteImage,
@@ -163,23 +163,38 @@ export async function deletePanelImage(kind: string, imageId: string): Promise<P
 // Rooms
 // ---------------------------------------------------------------------------
 
+/** Only ever continue somewhere inside the CRM. */
+function safeAdminPath(value: FormDataEntryValue | null, fallback: string): string {
+  const path = String(value ?? '');
+  return path.startsWith('/admin/') && !path.startsWith('//') ? path : fallback;
+}
+
 /**
- * Create a room type in a hotel. Returns rather than redirects, so the form
- * can upload the photos picked alongside it before moving on to `next`.
+ * Create or update a room type (`room_type_id` set = update). Returns rather
+ * than redirects, so the create form can upload the photos picked alongside
+ * it before moving on to `next` — the room's own page under `return_base`.
  */
-export async function createPanelRoomType(
+export async function saveRoomType(
   _prev: PanelActionState,
   formData: FormData,
 ): Promise<PanelActionState> {
   try {
     const session = await requirePermission('rooms.write');
-    const hotelId = String(formData.get('hotel_id') ?? '');
+    const roomTypeId = String(formData.get('room_type_id') ?? '');
+    const supabase = createAdminSupabase();
 
-    const { data: hotel } = await createAdminSupabase()
-      .from('hotels')
-      .select('id, slug')
-      .eq('id', hotelId)
-      .maybeSingle();
+    // Updates are checked against the room's own hotel, never the form's.
+    let hotelId = String(formData.get('hotel_id') ?? '');
+    if (roomTypeId) {
+      const { data: existing } = await supabase.from('room_types').select('hotel_id').eq('id', roomTypeId).maybeSingle();
+      if (!existing) throw new AppError('That room type no longer exists.', 404);
+      hotelId = existing.hotel_id;
+    }
+    if (!hotelId) {
+      return { error: 'Please fix the highlighted fields.', fieldErrors: { hotel_id: 'Choose a hotel.' } };
+    }
+
+    const { data: hotel } = await supabase.from('hotels').select('id, slug').eq('id', hotelId).maybeSingle();
     if (!hotel || !canAccessHotel(session, hotel.id)) {
       throw new AppError('This property is outside your assigned hotels.', 403);
     }
@@ -200,12 +215,20 @@ export async function createPanelRoomType(
       return { error: 'Please fix the highlighted fields.', fieldErrors };
     }
 
+    const base = safeAdminPath(formData.get('return_base'), hotelPanelPath(hotel.slug, 'rooms'));
+
+    if (roomTypeId) {
+      await updateRoomType({ roomTypeId, data: parsed.data, actorId: session.userId });
+      refresh();
+      return { success: `${parsed.data.name} saved.`, roomTypeId, next: `${base}/${roomTypeId}?saved=1` };
+    }
+
     const roomType = await createRoomType({ hotelId: hotel.id, data: parsed.data, actorId: session.userId });
     refresh();
     return {
       success: `${parsed.data.name} created.`,
       roomTypeId: roomType.id,
-      next: `${hotelPanelPath(hotel.slug, `images/rooms/${roomType.id}`)}?created=1`,
+      next: `${base}/${roomType.id}?created=1`,
     };
   } catch (err) {
     return toState(err);

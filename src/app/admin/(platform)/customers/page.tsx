@@ -4,6 +4,7 @@ import { getAdminSession, can } from '@/lib/auth/session';
 import { listCustomers } from '@/services/customer.service';
 import { PageHeader, Table, Td, NoAccess } from '@/components/admin/shared';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { FilterForm } from '@/components/admin/FilterForm';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Customers · AQOSS CRM' };
@@ -19,10 +20,9 @@ export default async function CustomersPage({ searchParams }: { searchParams: { 
     <>
       <PageHeader title="Customers" description="Every registered guest and their history." />
 
-      <form className="mb-4 flex gap-2">
+      <FilterForm className="mb-4 flex gap-2">
         <input name="q" className="input max-w-sm" placeholder="Name, email or mobile" defaultValue={searchParams.q ?? ''} />
-        <button type="submit" className="btn-outline">Search</button>
-      </form>
+      </FilterForm>
 
       <Table
         headers={[

@@ -91,7 +91,7 @@ export default async function AdminDashboard({
           <RangePicker />
           {can(session, 'bookings.write') ? (
             <Link
-              href="/admin/bookings"
+              href="/admin/bookings/new"
               className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
             >
               <Plus className="h-4 w-4" />

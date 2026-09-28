@@ -485,6 +485,97 @@ export function createRpc(tables: Tables) {
       return booking;
     },
 
+    // Mirrors supabase/migrations/…_modify_booking.sql.
+    modify_booking: ({ p_booking_id, p_check_in, p_check_out, p_rooms, p_guest, p_pricing, p_changed_by = null }: any) => {
+      const newNights = eachNight(p_check_in, p_check_out);
+      if (newNights.length === 0) throw new PgError('Check-out must be after check-in');
+      if (!p_rooms?.length) throw new PgError('At least one room is required');
+
+      const booking = find('bookings', (b) => b.id === p_booking_id);
+      if (!booking) throw new PgError('Booking not found', 'P0002');
+      if (!['PENDING', 'CONFIRMED'].includes(booking.status)) {
+        throw new PgError('Only pending or confirmed bookings can be changed');
+      }
+
+      releaseExpiredHolds();
+
+      const oldLines = filter('booking_rooms', (r) => r.booking_id === p_booking_id);
+      const oldNights = eachNight(booking.check_in, booking.check_out);
+      const shift = (lines: Row[], nights: string[], sign: 1 | -1) => {
+        for (const line of lines) {
+          for (const date of nights) {
+            const inv = find('room_inventory', (r) => r.room_type_id === line.room_type_id && r.stay_date === date);
+            if (inv) inv.booked_rooms = Math.max(Number(inv.booked_rooms) + sign * Number(line.rooms ?? 1), 0);
+          }
+        }
+      };
+
+      // Release the old nights, then check the new ones; undo on failure so
+      // the in-memory store behaves like the rolled-back transaction.
+      shift(oldLines, oldNights, -1);
+      try {
+        for (const line of p_rooms) {
+          const rt = find('room_types', (r) => r.id === line.room_type_id && r.hotel_id === booking.hotel_id && r.is_active);
+          if (!rt) throw new PgError('Room is no longer available', 'P0002');
+          const { free, allOnSale } = freeAcross(line.room_type_id, p_check_in, p_check_out);
+          if (!allOnSale || free < (line.rooms ?? 1)) {
+            throw new PgError(`Not enough ${rt.name} available for those dates`);
+          }
+        }
+      } catch (err) {
+        shift(oldLines, oldNights, 1);
+        throw err;
+      }
+      shift(p_rooms, newNights, 1);
+
+      tables.booking_rooms = tables.booking_rooms.filter((r) => r.booking_id !== p_booking_id);
+      let totalRooms = 0;
+      for (const line of p_rooms) {
+        const rt = find('room_types', (r) => r.id === line.room_type_id)!;
+        totalRooms += line.rooms ?? 1;
+        tables.booking_rooms.push({
+          id: randomUUID(), booking_id: p_booking_id, room_type_id: line.room_type_id,
+          room_id: null, room_type_name: rt.name, rooms: line.rooms ?? 1,
+          adults: line.adults ?? 1, children: line.children ?? 0,
+          nightly_rates: line.nightly_rates ?? [], subtotal: Number(line.subtotal ?? 0),
+          discount: Number(line.discount ?? 0), tax: Number(line.tax ?? 0), total: Number(line.total ?? 0),
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      const total = Number(p_pricing?.total_amount ?? 0);
+      Object.assign(booking, {
+        check_in: p_check_in,
+        check_out: p_check_out,
+        nights: newNights.length,
+        adults: p_guest?.adults ?? booking.adults,
+        children: p_guest?.children ?? booking.children,
+        rooms_count: totalRooms,
+        room_subtotal: Number(p_pricing?.room_subtotal ?? 0),
+        discount_total: Number(p_pricing?.discount_total ?? 0),
+        coupon_code: p_pricing?.coupon_code || null,
+        coupon_discount: Number(p_pricing?.coupon_discount ?? 0),
+        tax_total: Number(p_pricing?.tax_total ?? 0),
+        total_amount: total,
+        price_breakdown: p_pricing ?? {},
+        payment_status:
+          Number(booking.amount_paid) - Number(booking.amount_refunded ?? 0) >= total && total > 0
+            ? 'PAID'
+            : ['PAID', 'PENDING'].includes(booking.payment_status)
+              ? 'PENDING'
+              : booking.payment_status,
+        updated_at: new Date().toISOString(),
+      });
+
+      tables.booking_status_history.push({
+        id: randomUUID(), booking_id: booking.id, from_status: booking.status, to_status: booking.status,
+        note: `Changed to ${p_check_in} → ${p_check_out}, ${totalRooms} room(s)`, changed_by: p_changed_by,
+        created_at: booking.updated_at,
+      });
+
+      return booking;
+    },
+
     // -- PRD §27 ---------------------------------------------------------
     confirm_booking_payment: ({ p_booking_id, p_payment_id }: any) => {
       const booking = find('bookings', (b) => b.id === p_booking_id);
@@ -496,15 +587,20 @@ export function createRpc(tables: Tables) {
         payment.paid_at = payment.paid_at ?? new Date().toISOString();
       }
 
+      // Everything captured, including payments later (partly) refunded —
+      // refunds are tracked separately in amount_refunded.
       const paid = filter(
         'payments',
-        (p) => p.booking_id === p_booking_id && p.status === 'PAID',
+        (p) => p.booking_id === p_booking_id && ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(p.status),
       ).reduce((s, p) => s + Number(p.amount), 0);
 
       const previous = booking.status;
+      const net = paid - Number(booking.amount_refunded ?? 0);
       booking.amount_paid = paid;
-      booking.payment_status = paid >= Number(booking.total_amount) ? 'PAID' : 'PENDING';
-      if (paid >= Number(booking.total_amount)) booking.status = 'CONFIRMED';
+      booking.payment_status =
+        net >= Number(booking.total_amount) ? 'PAID' : Number(booking.amount_refunded ?? 0) > 0 ? 'PARTIALLY_REFUNDED' : 'PENDING';
+      // Only a pending booking becomes confirmed; paying mid-stay keeps CHECKED_IN.
+      if (net >= Number(booking.total_amount) && booking.status === 'PENDING') booking.status = 'CONFIRMED';
       booking.updated_at = new Date().toISOString();
 
       if (previous !== booking.status) {
