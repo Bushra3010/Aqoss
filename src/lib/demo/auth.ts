@@ -135,6 +135,65 @@ export function createDemoAuth(cookies: CookieStore) {
       return { data: { user }, error: null };
     },
 
+    /**
+     * The service-role slice of Supabase Auth (`auth.admin`) that staff
+     * management uses. Blocking an account (`ban_duration`) is modelled as
+     * the profile's `is_active`, which `getUser` already honours.
+     */
+    admin: {
+      async createUser({
+        email,
+        password,
+        user_metadata,
+      }: {
+        email: string;
+        password: string;
+        email_confirm?: boolean;
+        user_metadata?: Record<string, unknown>;
+      }) {
+        const normalised = email.trim().toLowerCase();
+        if (tables.profiles.some((p) => String(p.email).toLowerCase() === normalised)) {
+          return { data: { user: null }, error: { message: 'A user with this email address has already been registered' } };
+        }
+        const nowIso = new Date().toISOString();
+        const profile = {
+          id: randomUUID(),
+          full_name: (user_metadata?.full_name as string) ?? null,
+          email: normalised,
+          mobile: (user_metadata?.mobile as string) ?? null,
+          profile_photo: null,
+          address_line1: null, address_line2: null,
+          city: null, state: null, country: 'India', postal_code: null,
+          date_of_birth: null, id_type: null, id_number: null,
+          is_admin: false, is_active: true, marketing_optin: false,
+          metadata: { demo_password: password },
+          created_at: nowIso, updated_at: nowIso,
+        };
+        tables.profiles.push(profile);
+        return { data: { user: toAuthUser(profile) }, error: null };
+      },
+
+      async updateUserById(
+        id: string,
+        attrs: { password?: string; email?: string; user_metadata?: Record<string, unknown>; ban_duration?: string },
+      ) {
+        const profile = tables.profiles.find((p) => p.id === id);
+        if (!profile) return { data: { user: null }, error: { message: 'User not found' } };
+        if (attrs.email) {
+          const normalised = attrs.email.trim().toLowerCase();
+          if (tables.profiles.some((p) => p.id !== id && String(p.email).toLowerCase() === normalised)) {
+            return { data: { user: null }, error: { message: 'A user with this email address has already been registered' } };
+          }
+          profile.email = normalised;
+        }
+        if (attrs.password) profile.metadata = { ...profile.metadata, demo_password: attrs.password };
+        if (attrs.user_metadata?.full_name !== undefined) profile.full_name = attrs.user_metadata.full_name;
+        if (attrs.ban_duration) profile.is_active = attrs.ban_duration === 'none';
+        profile.updated_at = new Date().toISOString();
+        return { data: { user: toAuthUser(profile) }, error: null };
+      },
+    },
+
     async resetPasswordForEmail() {
       // Nothing to email in demo mode; the caller already answers vaguely.
       return { data: {}, error: null };

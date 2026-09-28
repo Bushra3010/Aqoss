@@ -12,6 +12,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { defaultsFor } from './defaults';
 import { RELATIONS } from './relations';
 import { afterUpdate } from './triggers';
 import type { Row, Tables } from './dataset';
@@ -406,9 +407,18 @@ export class DemoQuery<T = any> implements PromiseLike<Result<T>> {
     return result;
   }
 
+  /**
+   * A new row as Postgres would store it: omitted columns (and ones sent as
+   * `undefined`, which supabase-js drops from the JSON) take their default.
+   */
+  private newRecord(row: Row): Row {
+    const given = Object.fromEntries(Object.entries(row).filter(([, v]) => v !== undefined));
+    return { id: randomUUID(), created_at: new Date().toISOString(), ...defaultsFor(this.table), ...given };
+  }
+
   private runInsert(): Result<any> {
     const inserted = this.payload.map((row) => {
-      const record: Row = { id: randomUUID(), created_at: new Date().toISOString(), ...row };
+      const record = this.newRecord(row);
       this.rows().push(record);
       return record;
     });
@@ -442,7 +452,7 @@ export class DemoQuery<T = any> implements PromiseLike<Result<T>> {
         return existing;
       }
 
-      const record: Row = { id: randomUUID(), created_at: new Date().toISOString(), ...row };
+      const record = this.newRecord(row);
       this.rows().push(record);
       return record;
     });

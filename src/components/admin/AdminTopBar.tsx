@@ -132,6 +132,14 @@ export function AdminTopBar({
                     <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                     <p className="text-xs text-slate-400">{user.role}</p>
                   </div>
+                  <Link
+                    href="/admin/account"
+                    role="menuitem"
+                    className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    My account
+                  </Link>
                   {admin.some((item) => item.href === '/admin/settings') ? (
                     <Link
                       href="/admin/settings"

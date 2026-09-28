@@ -37,7 +37,7 @@ export default async function NotificationsPage({
 
   let query = supabase
     .from('notifications')
-    .select('id, event_key, channel, recipient, subject, body, state, scheduled_at, sent_at, attempts, last_error')
+    .select('id, event_key, channel, recipient, subject, body, state, scheduled_at, sent_at, attempts, last_error, created_at')
     .order('scheduled_at', { ascending: false })
     .limit(100);
 
@@ -116,11 +116,13 @@ export default async function NotificationsPage({
                       STATE_TONES[row.state] ?? 'bg-slate-100 text-slate-600',
                     )}
                   >
-                    {row.state.toLowerCase()}
+                    {String(row.state ?? 'queued').toLowerCase()}
                   </span>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {new Date(row.sent_at ?? row.scheduled_at).toLocaleString('en-IN')}
-                  </p>
+                  {row.sent_at ?? row.scheduled_at ?? row.created_at ? (
+                    <p className="mt-1 text-xs text-slate-400">
+                      {new Date(row.sent_at ?? row.scheduled_at ?? row.created_at).toLocaleString('en-IN')}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </li>

@@ -2,7 +2,7 @@
   "name": "aqoss-hotel",
   "version": "1.0.0",
   "private": true,
-  "description": "AQOSS Hotel — Multi-tenant hotel booking, CRM & multi-website platform",
+  "description": "AQOSS Hotel \u2014 Multi-tenant hotel booking, CRM & multi-website platform",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +12,8 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/types/supabase.ts",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "demo:defaults": "tsx scripts/generate-demo-defaults.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

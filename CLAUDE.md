@@ -63,6 +63,11 @@ changes. See `src/lib/demo/`: `dataset.ts` generates the data, `query.ts` is a P
 query engine, `rpc.ts` mirrors the PL/pgSQL booking engine, `triggers.ts` covers the database
 triggers.
 
+Inserts get each column's default from `src/lib/demo/defaults.ts`, generated from the migrations —
+run `npm run demo:defaults` after a migration adds or changes a default. Without it, rows written
+by services lacked columns Postgres would fill (a notification without `state` crashed the
+Notifications page).
+
 Two things to respect there:
 
 - **The store hangs off `globalThis`**, not a module-level `let`. Next compiles route handlers,
@@ -110,6 +115,15 @@ Offers are promotions shown on the website; only coupons change the price at che
 can be deleted only while unused (`deleteCoupon`): deleting a used one would cascade away its
 `coupon_redemptions`, so used coupons are paused instead. Offers can always be deleted
 (`deleteOffer`) — nothing in a booking points at them; linked coupons just lose `offer_id`.
+
+**Staff & roles** (`staff.service.ts`, Users & Roles, My account) run with the service role, so
+every rule lives in the service, not the form: nobody grants a role — or manages (edits, sets the
+password of, removes) someone whose role — has permissions they lack, because setting a password
+is as good as signing in as that person; scoped admins only manage staff inside their hotels; only
+an unscoped super admin edits roles or touches another super admin; nobody changes their own
+access; the last active all-hotels super admin can't be demoted or removed. Removing staff blocks
+the account (`ban_duration`) instead of deleting it, so their bookings and audit entries keep their
+author. Passwords are never logged. The demo stands in for `auth.admin` in `src/lib/demo/auth.ts`.
 
 **Leads** are abandoned bookings: PENDING and unpaid for longer than `BOOKING_HOLD_MINUTES`. The
 booking row is the lead; `booking_leads` only stores follow-up (status, notes). CONVERTED is

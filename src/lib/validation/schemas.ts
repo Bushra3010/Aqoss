@@ -256,6 +256,37 @@ export const staffBookingSchema = z.object({
   payment_reference: z.string().trim().max(100).nullish(),
 });
 
+/**
+ * Staff passwords: long enough to resist guessing, with a letter and a digit.
+ * Supabase enforces its own minimum too; this is the friendlier first check.
+ */
+export const passwordSchema = z
+  .string({ required_error: 'Enter a password.' })
+  .min(10, 'Use at least 10 characters.')
+  .max(72, 'Use at most 72 characters.')
+  .regex(/[A-Za-z]/, 'Include at least one letter.')
+  .regex(/\d/, 'Include at least one number.');
+
+export const adminUserSchema = z.object({
+  full_name: z.string({ required_error: 'Enter their name.' }).trim().min(2, 'Enter their name.').max(120),
+  email: z.string({ required_error: 'Enter an email.' }).trim().toLowerCase().email('Enter a valid email.'),
+  mobile: z
+    .string()
+    .trim()
+    .regex(/^[+0-9 ()-]{7,20}$/, 'Enter a valid phone number.')
+    .nullish(),
+  role_id: z.string({ required_error: 'Choose a role.' }).uuid('Choose a role.'),
+  /** Empty = every hotel. */
+  hotel_scope: z.array(z.string().uuid()).max(500).default([]),
+  is_active: z.coerce.boolean().default(true),
+});
+
+export const roleSchema = z.object({
+  name: z.string({ required_error: 'Name the role.' }).trim().min(2, 'Name the role.').max(60),
+  description: z.string().trim().max(300).nullish(),
+  permissions: z.array(z.string().min(1).max(60)).max(200).default([]),
+});
+
 export const websiteSchema = z.object({
   hotel_id: z.string().uuid(),
   name: z.string().trim().min(2).max(160),
