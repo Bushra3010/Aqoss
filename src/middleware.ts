@@ -6,6 +6,9 @@ import { isPlatformHost } from '@/lib/site-url';
 import { PLATFORM_PAGES } from '@/components/platform/nav';
 
 const PREVIEW_COOKIE = 'aqoss_preview_site';
+const SITE_COOKIE = 'aqoss_site';
+/** Mirrors `SITE_HEADER` in lib/tenant.ts, which middleware can't import. */
+const SITE_HEADER = 'x-aqoss-site';
 
 /**
  * Runs on every request (PRD §38, §42):
@@ -38,7 +41,19 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-aqoss-pathname', pathname);
   // Strip anything a client sent under our own header names.
   requestHeaders.delete('x-aqoss-preview-site');
+  requestHeaders.delete(SITE_HEADER);
   if (previewSlug) requestHeaders.set('x-aqoss-preview-site', previewSlug);
+
+  // Hotels served as paths on the main domain (hosts without subdomains, e.g.
+  // *.netlify.app): `/site/<slug>/…` opens a hotel and remembers it in a
+  // cookie, so its own links — /rooms, /booking/…, /login, /api/… — keep
+  // resolving to it. `getTenant()` still only shows a published website.
+  const onMainDomain = isPlatformHost(host);
+  const sitePath = onMainDomain ? pathname.match(/^\/site\/([a-z0-9-]+)(\/.*)?$/) : null;
+  const usesHotelPages =
+    onMainDomain && !sitePath && pathname !== '/' && !pathname.startsWith('/admin') && !pathname.startsWith('/platform');
+  const siteSlug = sitePath?.[1] ?? (usesHotelPages ? request.cookies.get(SITE_COOKIE)?.value ?? null : null);
+  if (siteSlug && /^[a-z0-9-]+$/.test(siteSlug)) requestHeaders.set(SITE_HEADER, siteSlug);
 
   // The main domain's home page is the AQOSS website; hotels live on its
   // subdomains. A `?preview_site=` request still previews a hotel here, because
@@ -47,14 +62,24 @@ export async function middleware(request: NextRequest) {
   // The AQOSS website's own pages (`/about`, `/ai-website`, …) live under
   // /platform too; on a hotel subdomain those paths are simply not found.
   const platformPage = pathname === '/' || PLATFORM_PAGES.includes(pathname.slice(1));
+  if (platformPage) requestHeaders.delete(SITE_HEADER);
   const toPlatform = platformPage && !previewSlug && isPlatformHost(host);
   // Clone rather than `new URL('/platform', …)`, which would drop the hotel
   // search's query string.
   const platformUrl = request.nextUrl.clone();
   platformUrl.pathname = pathname === '/' ? '/platform' : `/platform${pathname}`;
-  const response = toPlatform
-    ? NextResponse.rewrite(platformUrl, { request: { headers: requestHeaders } })
-    : NextResponse.next({ request: { headers: requestHeaders } });
+  let response: NextResponse;
+  if (sitePath) {
+    const hotelUrl = request.nextUrl.clone();
+    hotelUrl.pathname = sitePath[2] && sitePath[2] !== '/' ? sitePath[2] : '/';
+    requestHeaders.set('x-aqoss-pathname', hotelUrl.pathname);
+    response = NextResponse.rewrite(hotelUrl, { request: { headers: requestHeaders } });
+    response.cookies.set(SITE_COOKIE, sitePath[1], { httpOnly: true, sameSite: 'lax', path: '/' });
+  } else {
+    response = toPlatform
+      ? NextResponse.rewrite(platformUrl, { request: { headers: requestHeaders } })
+      : NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   if (previewParam) {
     response.cookies.set(PREVIEW_COOKIE, previewParam, {

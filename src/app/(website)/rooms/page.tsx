@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import { getPublishedTenant } from '@/lib/tenant';
 import { getHotelSiteData } from '@/services/hotel.service';
 import { RoomsSection } from '@/components/website/sections/RoomsSection';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Rooms' };
@@ -30,7 +32,7 @@ export default async function RoomsPage({
       <RoomsSection site={site} searchParams={searchParams} />
 
       <Link
-        href="/#rooms"
+        href={siteHome(getSiteBase(), '#rooms')}
         className="mt-5 inline-block text-sm font-medium"
         style={{ color: 'var(--brand-700)' }}
       >

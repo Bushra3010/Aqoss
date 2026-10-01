@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Booking confirmed' };
@@ -127,7 +129,7 @@ export default async function ConfirmationPage({ params }: { params: { reference
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/dashboard/bookings" className="btn-primary">View in my bookings</Link>
-        <Link href="/" className="btn-outline">Back to hotel</Link>
+        <Link href={siteHome(getSiteBase())} className="btn-outline">Back to hotel</Link>
         {hotel.phone ? (
           <a href={`tel:${hotel.phone}`} className="btn-ghost">Call the property</a>
         ) : null}

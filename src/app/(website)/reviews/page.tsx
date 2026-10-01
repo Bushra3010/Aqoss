@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import { getPublishedTenant } from '@/lib/tenant';
 import { getHotelSiteData } from '@/services/hotel.service';
 import { ReviewsSection } from '@/components/website/sections/ReviewsSection';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guest reviews' };
@@ -26,7 +28,7 @@ export default async function ReviewsPage() {
       <ReviewsSection site={site} />
 
       <Link
-        href="/#user-reviews"
+        href={siteHome(getSiteBase(), '#user-reviews')}
         className="mt-5 inline-block text-sm font-medium"
         style={{ color: 'var(--brand-700)' }}
       >

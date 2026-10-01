@@ -219,7 +219,18 @@ The main domain is baked in at build time (middleware inlines it). `next.config.
 `NEXT_PUBLIC_ROOT_DOMAIN` / `NEXT_PUBLIC_APP_URL` when set, otherwise Netlify's `URL` build
 variable, so a Netlify deploy serves the AQOSS website without configuration. Without either,
 the app assumes `localhost:3000` and every real host looks like an unknown hotel ("Hotel not
-found"). Hotel subdomains need a custom domain with wildcard DNS — `*.netlify.app` has none.
+found").
+
+Where the host can't have subdomains (`*.netlify.app`, `*.vercel.app` — no DNS and no certificate
+for a second level), hotels are paths instead: `hotelsOnPaths` in `site-url.ts` makes `websiteUrl()`
+return `<main domain>/site/<slug>`. Middleware rewrites `/site/<slug>/…` to the hotel's own route,
+sets the `aqoss_site` cookie, and forwards `x-aqoss-site` (stripped from client requests), so the
+hotel's ordinary links — `/rooms`, `/booking/…`, `/login`, `/api/…` — keep resolving to it from the
+cookie; `/`, `/admin` and the AQOSS pages never do. `getTenant()` reads that header only on the
+main domain, and public pages still require a published website. Links back to the hotel's home
+page must use `siteHome(getSiteBase())`, never a bare `/` — on the main domain `/` is the AQOSS
+website. `NEXT_PUBLIC_HOTEL_URLS=path|subdomain` overrides the detection; a custom domain with a
+wildcard record should use subdomains.
 
 ## Hotel website template
 

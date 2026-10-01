@@ -22,9 +22,10 @@ const SECTIONS = [
  * becomes the active tab. From a standalone route (kept for SEO and deep
  * links) they navigate home to that anchor instead.
  */
-export function SectionTabs() {
+export function SectionTabs({ home }: { home: string }) {
   const pathname = usePathname();
-  const onSinglePage = pathname === '/';
+  // `home` is `/`, or `/site/<slug>` when the hotel is a path on the main domain.
+  const onSinglePage = pathname === home;
 
   const [active, setActive] = useState('overview');
   const listRef = useRef<HTMLUListElement>(null);
@@ -104,7 +105,7 @@ export function SectionTabs() {
           return (
             <li key={section.id} className="shrink-0">
               <Link
-                href={onSinglePage ? `#${section.id}` : `/#${section.id}`}
+                href={onSinglePage ? `#${section.id}` : `${home}#${section.id}`}
                 scroll={onSinglePage ? false : undefined}
                 onClick={
                   onSinglePage

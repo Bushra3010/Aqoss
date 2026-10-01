@@ -14,10 +14,13 @@ import { todayISO, toISODate } from '@/lib/utils';
  * sells one property, so it shows which one rather than offering a choice.
  */
 export function BookingSearchBar({
+  home,
   hotelName,
   city,
   signedIn,
 }: {
+  /** The hotel's home page: `/`, or `/site/<slug>` on the main domain. */
+  home: string;
   hotelName: string;
   city: string | null;
   signedIn: boolean;
@@ -54,7 +57,7 @@ export function BookingSearchBar({
     });
     // Stay on the single page: re-render the rooms section with availability
     // and scroll straight to it.
-    router.push(`/?${query.toString()}#rooms`, { scroll: false });
+    router.push(`${home}?${query.toString()}#rooms`, { scroll: false });
     window.setTimeout(() => {
       const el = document.getElementById('rooms');
       if (!el) return;

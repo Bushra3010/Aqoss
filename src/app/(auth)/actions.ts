@@ -8,6 +8,8 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { registerSchema } from '@/lib/validation/schemas';
 import { env, isDemoMode } from '@/lib/env';
 import { DEMO_ACCOUNTS } from '@/lib/demo/store';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 /**
  * Customer authentication (PRD §11), built on Supabase Auth.
@@ -44,7 +46,7 @@ export async function demoSignIn(email: string, redirectTo: string): Promise<Aut
   if (error) return { error: 'Could not sign in to that demo account.' };
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
+  redirect(redirectTo.startsWith('/') && redirectTo !== '/' ? redirectTo : siteHome(getSiteBase()));
 }
 
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -150,5 +152,5 @@ export async function signOut() {
   const supabase = createServerSupabase();
   await supabase.auth.signOut();
   revalidatePath('/', 'layout');
-  redirect('/');
+  redirect(siteHome(getSiteBase()));
 }

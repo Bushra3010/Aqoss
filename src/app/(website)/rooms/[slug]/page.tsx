@@ -5,6 +5,8 @@ import { getPublishedTenant } from '@/lib/tenant';
 import { getHotelSiteData, getRoomType } from '@/services/hotel.service';
 import { Gallery } from '@/components/website/Gallery';
 import { formatCurrency, todayISO } from '@/lib/utils';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +55,7 @@ export default async function RoomDetailPage({ params }: { params: { slug: strin
   return (
     <div className="container-page max-w-[1400px] py-8">
       <nav aria-label="Breadcrumb" className="text-sm text-slate-500">
-        <Link href="/" className="hover:text-slate-800">{site.hotel.name}</Link>
+        <Link href={siteHome(getSiteBase())} className="hover:text-slate-800">{site.hotel.name}</Link>
         <span className="mx-1.5">/</span>
         <Link href="/rooms" className="hover:text-slate-800">Rooms</Link>
         <span className="mx-1.5">/</span>

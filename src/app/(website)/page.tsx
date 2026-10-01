@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
-import { getPublishedTenant, normalizeHostname } from '@/lib/tenant';
+import { getPublishedTenant } from '@/lib/tenant';
 import { getHotelSiteData } from '@/services/hotel.service';
 import { getUser } from '@/lib/auth/session';
-import { env } from '@/lib/env';
 import { PropertyGallery } from '@/components/website/PropertyGallery';
 import { AboutProperty } from '@/components/website/AboutProperty';
 import { LoginPromo } from '@/components/website/LoginPromo';
@@ -55,7 +54,7 @@ export default async function HotelPage({
         <LocationSection site={site} />
         <PropertyRulesSection site={site} />
         <ReviewsSection site={site} />
-        <SimilarPropertiesSection site={site} rootDomain={normalizeHostname(env.rootDomain)} />
+        <SimilarPropertiesSection site={site} />
       </div>
 
       {/*

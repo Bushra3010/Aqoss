@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getPublishedTenant, getActivePreviewSlug } from '@/lib/tenant';
+import { getPublishedTenant, getActivePreviewSlug, getSiteBase } from '@/lib/tenant';
 import { getHotelSiteData } from '@/services/hotel.service';
 import { SiteHeader } from '@/components/website/SiteHeader';
 import { SiteFooter } from '@/components/website/SiteFooter';
@@ -10,6 +10,7 @@ import { SectionTabs } from '@/components/website/SectionTabs';
 import { HelpWidget } from '@/components/website/HelpWidget';
 import { getUser } from '@/lib/auth/session';
 import { env } from '@/lib/env';
+import { siteHome } from '@/lib/site-url';
 
 /**
  * The common hotel website template (PRD §4, §5).
@@ -87,6 +88,7 @@ export default async function WebsiteLayout({ children }: { children: React.Reac
       {/* The booking bar sits on every page of the template. */}
       <div className="container-page pt-4">
         <BookingSearchBar
+          home={siteHome(getSiteBase())}
           hotelName={site.hotel.name}
           city={site.hotel.city}
           signedIn={Boolean(await getUser())}
@@ -100,7 +102,7 @@ export default async function WebsiteLayout({ children }: { children: React.Reac
        */}
       <div className="sticky top-0 z-20 bg-[var(--page-bg)] py-3">
         <div className="container-page">
-          <SectionTabs />
+          <SectionTabs home={siteHome(getSiteBase())} />
         </div>
       </div>
 

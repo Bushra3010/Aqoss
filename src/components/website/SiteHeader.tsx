@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Mail, Phone, User } from 'lucide-react';
 import { getUser } from '@/lib/auth/session';
 import type { HotelSiteData } from '@/types';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 /**
  * The utility bar across the top of every hotel website.
@@ -17,7 +19,7 @@ export async function SiteHeader({ site }: { site: HotelSiteData }) {
   return (
     <header style={{ backgroundColor: 'var(--brand-700)' }}>
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
+        <Link href={siteHome(getSiteBase())} className="flex min-w-0 items-center gap-3">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="" className="h-9 w-9 rounded-lg object-cover" />

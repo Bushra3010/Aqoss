@@ -4,12 +4,15 @@ import { cache } from 'react';
 import { headers } from 'next/headers';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
+import { isPlatformHost, SITE_PATH_PREFIX } from '@/lib/site-url';
 import type { TenantContext } from '@/types';
 
 /** Header set by middleware so route handlers and pages see the same hostname. */
 export const HOST_HEADER = 'x-aqoss-host';
 /** Set when an admin is previewing an unpublished website (PRD §47). */
 export const PREVIEW_HEADER = 'x-aqoss-preview-site';
+/** A hotel opened as `/site/<slug>` on the main domain (set by middleware). */
+export const SITE_HEADER = 'x-aqoss-site';
 
 /** Strip the port and any leading `www.` so lookups are stable. */
 export function normalizeHostname(host: string): string {
@@ -131,8 +134,26 @@ export const getTenant = cache(async (): Promise<TenantContext | null> => {
   const h = headers();
   const host = h.get(HOST_HEADER) ?? h.get('host') ?? '';
   if (!host) return null;
+
+  // A hotel served as a path on the main domain. Callers that face the public
+  // go through getPublishedTenant, so this never shows an unpublished site.
+  const site = h.get(SITE_HEADER);
+  if (site && isPlatformHost(host)) return resolveTenantBySlug(site);
+
   return resolveTenantByHost(host);
 });
+
+/**
+ * Prefix for links back to the hotel's home page from inside its website:
+ * `/site/<slug>` when it is served as a path on the main domain, '' on its own
+ * subdomain. Use with `siteHome()` from lib/site-url.
+ */
+export function getSiteBase(): string {
+  const h = headers();
+  const site = h.get(SITE_HEADER);
+  const host = h.get(HOST_HEADER) ?? h.get('host') ?? '';
+  return site && isPlatformHost(host) && !h.get(PREVIEW_HEADER) ? `${SITE_PATH_PREFIX}/${site}` : '';
+}
 
 /**
  * A tenant that is live to the public. An unpublished website resolves to null

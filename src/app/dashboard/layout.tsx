@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { initials } from '@/lib/utils';
+import { getSiteBase } from '@/lib/tenant';
+import { siteHome } from '@/lib/site-url';
 
 const NAV = [
   { href: '/dashboard', label: 'Overview' },
@@ -28,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="container-page flex h-16 items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-slate-900">
+          <Link href={siteHome(getSiteBase())} className="text-sm font-semibold text-slate-900">
             ← Back to the hotel
           </Link>
 

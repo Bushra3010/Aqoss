@@ -1,6 +1,7 @@
 import { Star } from 'lucide-react';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { formatCurrency } from '@/lib/utils';
+import { websiteUrl } from '@/lib/site-url';
 import type { HotelSiteData } from '@/types';
 
 /**
@@ -9,13 +10,7 @@ import type { HotelSiteData } from '@/types';
  * Each result links to that hotel's own website — every property on the
  * platform has one, so this is a link out rather than a second listing page.
  */
-export async function SimilarPropertiesSection({
-  site,
-  rootDomain,
-}: {
-  site: HotelSiteData;
-  rootDomain: string;
-}) {
+export async function SimilarPropertiesSection({ site }: { site: HotelSiteData }) {
   const { data } = await createAdminSupabase()
     .from('hotels')
     .select(
@@ -71,7 +66,7 @@ export async function SimilarPropertiesSection({
             return (
               <li key={hotel.id}>
                 <a
-                  href={`//${website.slug}.${rootDomain}`}
+                  href={websiteUrl(website.slug)}
                   className="group block overflow-hidden rounded-xl border border-slate-200 transition hover:border-slate-300 hover:shadow-sm"
                 >
                   <span className="block aspect-[4/3] bg-slate-100">
