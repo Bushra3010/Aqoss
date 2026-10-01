@@ -215,6 +215,12 @@ wildcard `*.aqoss.com` record. Build links with `websiteUrl()` / `websiteAdminUr
 because the admin's session cookie does not reach the subdomains. `website_domains` is for a
 hotel's own custom domain.
 
+The main domain is baked in at build time (middleware inlines it). `next.config.mjs` takes
+`NEXT_PUBLIC_ROOT_DOMAIN` / `NEXT_PUBLIC_APP_URL` when set, otherwise Netlify's `URL` build
+variable, so a Netlify deploy serves the AQOSS website without configuration. Without either,
+the app assumes `localhost:3000` and every real host looks like an unknown hotel ("Hotel not
+found"). Hotel subdomains need a custom domain with wildcard DNS — `*.netlify.app` has none.
+
 ## Hotel website template
 
 `src/app/(website)/layout.tsx` is the shell every hotel site renders through: the blue header,
