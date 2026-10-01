@@ -228,10 +228,20 @@ async function seedCoupons() {
   console.log(`✓ ${coupons.length} coupons`);
 }
 
+const usedSlugs = new Set<string>();
+
+/** The platform domain without port, e.g. `aqoss.com` or `localhost` (see src/lib/site-url.ts). */
+const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').replace(/^www\./, '');
+const PLATFORM_HOST = ROOT_DOMAIN.toLowerCase().split(':')[0];
+const SITE_PROTOCOL = (process.env.NEXT_PUBLIC_APP_URL || '').startsWith('https:') ? 'https:' : 'http:';
+
 async function seedHotel(index: number) {
   const [city, state, lat, lng] = pick(CITIES, index);
   const name = `${pick(PREFIXES, index)} ${pick(NAMES, index)} ${pick(SUFFIXES, index + 3)}`;
-  const slug = `${slugify(name)}-${slugify(city)}-${index + 1}`;
+  // `<hotel>-<city>` is the website subdomain; numbered only if it repeats.
+  const baseSlug = `${slugify(name)}-${slugify(city)}`;
+  const slug = usedSlugs.has(baseSlug) ? `${baseSlug}-${index + 1}` : baseSlug;
+  usedSlugs.add(slug);
   const stars = 3 + Math.floor(rand(index + 1) * 3) * 0.5;
   const basePrice = 2200 + Math.floor(rand(index + 7) * 12) * 450;
 
@@ -358,8 +368,7 @@ async function seedHotel(index: number) {
   if (websiteError) throw new Error(`website ${index}: ${websiteError.message}`);
 
   await insert('website_domains', [
-    { website_id: website.id, hostname: `${slug}.localhost`, is_primary: true, is_verified: true },
-    { website_id: website.id, hostname: `${slug}.example.com`, is_primary: false, is_verified: false },
+    { website_id: website.id, hostname: `${slug}.${PLATFORM_HOST}`, is_primary: true, is_verified: true },
   ], 'id');
 
   // ---- room types, rooms, inventory, rates ------------------------------
@@ -581,11 +590,12 @@ async function main() {
   for (let i = 0; i < COUNT; i++) {
     const hotel = await seedHotel(i);
     const n = String(i + 1).padStart(2, ' ');
-    console.log(`  ${n}/${COUNT}  ${hotel.name}  →  http://${hotel.slug}.localhost:3000`);
+    console.log(`  ${n}/${COUNT}  ${hotel.name}  →  ${SITE_PROTOCOL}//${hotel.slug}.${ROOT_DOMAIN}`);
   }
 
   console.log('\nDone.');
-  console.log('Visit any hotel at http://<slug>.localhost:3000');
+  console.log(`Visit any hotel at ${SITE_PROTOCOL}//<slug>.${ROOT_DOMAIN}`);
+  console.log('Create your first admin login with: npm run admin:create -- --email=you@example.com');
   console.log('Set DEFAULT_WEBSITE_SLUG in .env.local to serve one of them on plain localhost:3000.');
 }
 

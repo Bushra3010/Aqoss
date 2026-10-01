@@ -168,14 +168,14 @@ declare b text;
 begin
   foreach b in array array['hotel-images', 'room-images', 'website-assets']
   loop
-    execute format($f$
-      create policy %1$I on storage.objects
-        for select using (bucket_id = %2$L);
-      create policy %3$I on storage.objects
-        for all to authenticated
-        using (bucket_id = %2$L and public.is_admin())
-        with check (bucket_id = %2$L and public.is_admin());
-    $f$, b || '_public_read', b, b || '_admin_write');
+    -- Plain placeholders, no single dollar signs (see the note in 0009).
+    execute format(
+      'create policy %I on storage.objects for select using (bucket_id = %L)',
+      b || '_public_read', b);
+    execute format(
+      'create policy %I on storage.objects for all to authenticated '
+        'using (bucket_id = %L and public.is_admin()) with check (bucket_id = %L and public.is_admin())',
+      b || '_admin_write', b, b);
   end loop;
 end $$;
 

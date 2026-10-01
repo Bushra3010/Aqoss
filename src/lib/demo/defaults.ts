@@ -287,6 +287,12 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "status": "NEW",
     "created_at": NOW,
     "updated_at": NOW
+  },
+  "demo_requests": {
+    "interests": [],
+    "status": "NEW",
+    "created_at": NOW,
+    "updated_at": NOW
   }
 };
 

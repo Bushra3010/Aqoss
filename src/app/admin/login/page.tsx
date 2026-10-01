@@ -33,14 +33,9 @@ export default async function AdminLoginPage({
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span
-            className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700"
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 20 12 4l8 16" />
-              <path d="M8.5 14h7" />
-            </svg>
+          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003358]" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/aqoss-mark-white.png" alt="" className="h-[62%] w-auto" />
           </span>
           <p className="text-2xl font-bold text-white">AQOSS</p>
           <p className="text-sm text-slate-400">Hotel management CRM</p>

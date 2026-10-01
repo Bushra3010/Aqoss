@@ -184,7 +184,30 @@ inventing a number.
 
 ## Website addresses
 
-Every website is served at `<website-slug>.<NEXT_PUBLIC_ROOT_DOMAIN>` — in production
+**The main domain is the AQOSS website** (`src/app/platform/`): middleware rewrites `/` on the
+main domain (`aqoss.com`, `www.`, or plain `localhost` in dev — `isPlatformHost` in
+`src/lib/site-url.ts`) to `/platform`, which 404s on any hotel subdomain. Its Book demo form
+(`src/app/platform/actions.ts`) is public — validated, honeypot-guarded and rate-limited — and
+writes `demo_requests` (migration 15), shown in the CRM under Demo requests. There is no
+fallback hotel any more: an unknown host resolves to no tenant (404), never to someone else's
+hotel. `?preview_site=` on the main domain still previews a hotel for a signed-in admin.
+
+The AQOSS home page's hero search is a plain GET form back to `/` (middleware keeps the query
+string when it rewrites). It only *finds* hotels by name, city or address; each result opens on
+the hotel's own subdomain with the dates, and availability is judged there. Offers & Deals lists
+active, in-date offers from published websites, showing a coupon code only when an active,
+usable coupon is linked to the offer. The hero badges are counts from the database — do not
+put invented figures (hotel counts, satisfaction rates) or products AQOSS doesn't have (flights,
+trains) on this page.
+
+The AQOSS website's other pages — `/about` and one per solution (`/ai-website`, `/ai-marketing`,
+`/ai-sales`, `/booking-engine`, `/reputation`) — are rewritten by middleware to `/platform/<path>`
+on the main domain only, from `PLATFORM_PAGES` in `src/components/platform/nav.ts`; add a path
+there when adding a page. They share `src/app/platform/layout.tsx` (header, footer, font, and the
+main-domain check). Solution page copy lives in `solution-pages.ts` and must describe only
+features that exist.
+
+Every hotel website is served at `<website-slug>.<NEXT_PUBLIC_ROOT_DOMAIN>` — in production
 `the-serenity-inn-goa.aqoss.com`, in dev `the-serenity-inn-goa.localhost:3000`. `resolveTenantByHost`
 maps the subdomain back by slug, so a new website needs no DNS or `website_domains` row, only the
 wildcard `*.aqoss.com` record. Build links with `websiteUrl()` / `websiteAdminUrl()` in

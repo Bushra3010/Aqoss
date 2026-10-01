@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createMiddlewareSupabase } from '@/lib/supabase/middleware';
 import { isDemoMode, isSupabaseConfigured } from '@/lib/env';
 import { DEMO_SESSION_COOKIE } from '@/lib/demo/constants';
+import { isPlatformHost } from '@/lib/site-url';
+import { PLATFORM_PAGES } from '@/components/platform/nav';
 
 const PREVIEW_COOKIE = 'aqoss_preview_site';
 
@@ -38,7 +40,21 @@ export async function middleware(request: NextRequest) {
   requestHeaders.delete('x-aqoss-preview-site');
   if (previewSlug) requestHeaders.set('x-aqoss-preview-site', previewSlug);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // The main domain's home page is the AQOSS website; hotels live on its
+  // subdomains. A `?preview_site=` request still previews a hotel here, because
+  // the admin's session cookie only exists on the main domain.
+  //
+  // The AQOSS website's own pages (`/about`, `/ai-website`, …) live under
+  // /platform too; on a hotel subdomain those paths are simply not found.
+  const platformPage = pathname === '/' || PLATFORM_PAGES.includes(pathname.slice(1));
+  const toPlatform = platformPage && !previewSlug && isPlatformHost(host);
+  // Clone rather than `new URL('/platform', …)`, which would drop the hotel
+  // search's query string.
+  const platformUrl = request.nextUrl.clone();
+  platformUrl.pathname = pathname === '/' ? '/platform' : `/platform${pathname}`;
+  const response = toPlatform
+    ? NextResponse.rewrite(platformUrl, { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
 
   if (previewParam) {
     response.cookies.set(PREVIEW_COOKIE, previewParam, {

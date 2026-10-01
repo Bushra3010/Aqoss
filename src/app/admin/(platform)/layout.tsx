@@ -30,6 +30,7 @@ const MAIN_NAV: (NavItem & { permission: string })[] = [
 ];
 
 const ADMIN_NAV: (NavItem & { permission: string })[] = [
+  { href: '/admin/demo-requests', label: 'Demo requests', icon: 'leads', permission: 'demo_requests.read' },
   { href: '/admin/admins', label: 'Users & Roles', icon: 'users', permission: 'admins.read' },
   { href: '/admin/settings', label: 'System Settings', icon: 'settings', permission: 'settings.write' },
   { href: '/admin/audit', label: 'Audit Logs', icon: 'audit', permission: 'audit.read' },

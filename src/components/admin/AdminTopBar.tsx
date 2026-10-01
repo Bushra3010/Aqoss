@@ -156,7 +156,7 @@ export function AdminTopBar({
                     className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
                     onClick={() => setMenuOpen(false)}
                   >
-                    View a hotel website
+                    AQOSS website
                   </Link>
                   <form action="/auth/signout" method="post" className="border-t border-slate-100">
                     <button

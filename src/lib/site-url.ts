@@ -32,3 +32,13 @@ export function websiteUrl(slug: string): string {
 export function websiteAdminUrl(slug: string, status: string): string {
   return status === 'ACTIVE' ? websiteUrl(slug) : `${APP_URL}/?preview_site=${encodeURIComponent(slug)}`;
 }
+
+/**
+ * Is this request for the main domain itself — the AQOSS website — rather
+ * than a hotel's subdomain? `aqoss.com`, `www.aqoss.com`, and in dev plain
+ * `localhost` / `127.0.0.1`. Edge-safe (middleware uses it).
+ */
+export function isPlatformHost(rawHost: string): boolean {
+  const host = rawHost.toLowerCase().split(':')[0].replace(/^www\./, '');
+  return host === platformHost || host === 'localhost' || host === '127.0.0.1';
+}

@@ -88,14 +88,9 @@ export function AdminSidebar({
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="flex items-center gap-3 px-5 py-5">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700"
-          aria-hidden="true"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 20 12 4l8 16" />
-            <path d="M8.5 14h7" />
-          </svg>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#003358]" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/aqoss-mark-white.png" alt="" className="h-[62%] w-auto" />
         </span>
         <span className="min-w-0">
           <span className="block text-lg font-bold leading-tight tracking-tight text-slate-900">AQOSS</span>

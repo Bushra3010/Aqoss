@@ -3,7 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import { headers } from 'next/headers';
 import { createAdminSupabase } from '@/lib/supabase/admin';
-import { env, isDemoMode } from '@/lib/env';
+import { env } from '@/lib/env';
 import type { TenantContext } from '@/types';
 
 /** Header set by middleware so route handlers and pages see the same hostname. */
@@ -60,19 +60,9 @@ export const resolveTenantByHost = cache(
       if (bySlug) return shape(bySlug);
     }
 
-    // In demo mode an unmapped hostname (plain localhost) serves the first
-    // hotel, so the app is browsable the moment the server starts.
-    if (isDemoMode) {
-      const { data: fallback } = await supabase
-        .from('websites')
-        .select('id, slug, status, hotel_id, hotels!inner(slug)')
-        .eq('status', 'ACTIVE')
-        .limit(1)
-        .maybeSingle();
-
-      if (fallback) return shape(fallback);
-    }
-
+    // No fallback hotel: the main domain is the AQOSS website (see
+    // middleware), and an unknown subdomain is a 404 rather than someone
+    // else's hotel.
     return null;
   },
 );

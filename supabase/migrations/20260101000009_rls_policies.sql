@@ -127,19 +127,18 @@ begin
     'hotel_amenities', 'hotel_images', 'hotel_policies', 'hotel_nearby_places'
   ]
   loop
-    execute format($f$
-      create policy %1$s_public_read on public.%1$s
-        for select using (
-          public.hotel_is_public(hotel_id) or public.has_permission('hotels.read')
-        );
-      create policy %1$s_admin_write on public.%1$s
-        for all using (
-          public.has_permission('hotels.write') and public.can_access_hotel(hotel_id)
-        )
-        with check (
-          public.has_permission('hotels.write') and public.can_access_hotel(hotel_id)
-        );
-    $f$, t);
+    -- Plain '%I' placeholders and quoted strings, not positional placeholders
+    -- inside a dollar-quoted string: lone dollar signs were mangled when the
+    -- script was pasted into a web SQL editor. Same policies either way.
+    execute format(
+      'create policy %I on public.%I for select using ('
+        'public.hotel_is_public(hotel_id) or public.has_permission(''hotels.read''))',
+      t || '_public_read', t);
+    execute format(
+      'create policy %I on public.%I for all using ('
+        'public.has_permission(''hotels.write'') and public.can_access_hotel(hotel_id)) '
+        'with check (public.has_permission(''hotels.write'') and public.can_access_hotel(hotel_id))',
+      t || '_admin_write', t);
   end loop;
 end $$;
 
