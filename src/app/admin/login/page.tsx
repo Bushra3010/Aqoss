@@ -4,9 +4,6 @@ import { redirect } from 'next/navigation';
 import { safeLocalPath } from '@/lib/safe-path';
 import { getAdminSession } from '@/lib/auth/session';
 import { AdminLoginForm } from '@/components/admin/AdminLoginForm';
-import { DemoSignIn } from '@/components/DemoSignIn';
-import { isDemoMode } from '@/lib/env';
-import { DEMO_ACCOUNTS } from '@/lib/demo/store';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'AQOSS CRM · Sign in' };
@@ -23,16 +20,6 @@ export default async function AdminLoginPage({
   // signing in replaces the current session and lands on the dashboard.
   if (session && searchParams.redirect) redirect(redirectTo);
 
-  // Super Admin and the single-property manager, which show the two ends of
-  // hotel scope. The other staff roles still exist and can be signed into by
-  // typing their credentials — see DEMO_ACCOUNTS.
-  const demoAccounts = isDemoMode
-    ? DEMO_ACCOUNTS.filter((a) => a.role === 'super_admin' || a.role === 'property_manager').map((a) => ({
-        email: a.email,
-        label: roleLabel(a.role!),
-        description: a.description,
-      }))
-    : [];
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4 py-10">
@@ -59,7 +46,6 @@ export default async function AdminLoginPage({
             }
           />
 
-          <DemoSignIn accounts={demoAccounts} redirectTo={redirectTo} />
         </div>
 
         {session ? (
@@ -73,11 +59,4 @@ export default async function AdminLoginPage({
       </div>
     </div>
   );
-}
-
-function roleLabel(key: string): string {
-  return key
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }

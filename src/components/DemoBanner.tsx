@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { isDemoMode } from '@/lib/env';
 
 /**
@@ -10,10 +9,7 @@ export function DemoBanner() {
 
   return (
     <div className="bg-slate-900 px-4 py-1.5 text-center text-xs text-slate-300">
-      Demo mode · in-memory data, resets on restart ·{' '}
-      <Link href="/demo" className="font-medium text-white underline underline-offset-2">
-        all hotels &amp; sign-ins
-      </Link>
+      Demo mode · in-memory sample data for local development, resets on restart
     </div>
   );
 }

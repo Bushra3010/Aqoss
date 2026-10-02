@@ -56,7 +56,9 @@ needs to change.
 
 ## Running without a database
 
-`isDemoMode` (src/lib/env.ts) is true when `DEMO_MODE=true` or when Supabase is unconfigured.
+`isDemoMode` (src/lib/env.ts) is true only when `DEMO_MODE=true` — local development. It never
+switches itself on: a deployment without Supabase settings shows `/setup` rather than quietly
+serving sample data (it once did, and the live site ran on demo data unnoticed).
 The three client factories in `src/lib/supabase/` then hand back `createDemoClient()` instead —
 an in-memory stand-in with the same `.from()` / `.rpc()` / `.auth` surface, so no service or page
 changes. See `src/lib/demo/`: `dataset.ts` generates the data, `query.ts` is a PostgREST-shaped
@@ -84,9 +86,10 @@ Two things to respect there:
 With neither demo mode nor Supabase, middleware rewrites every request to `/setup`. Keep that
 page free of any import that reaches data — it must render without either.
 
-`demoSignIn` in `src/app/(auth)/actions.ts` powers the one-click account buttons. It re-checks
-`isDemoMode` and that the email is a seeded account, so it cannot become a back door once real
-credentials are configured.
+There are no one-click demo sign-ins any more; in demo mode the seeded accounts in
+`DEMO_ACCOUNTS` sign in through the normal forms. The real database starts empty apart from
+what the migrations seed (roles, permissions, templates, settings); the first Super Admin comes
+from `npm run admin:create`, and hotels are added in the CRM.
 
 ## Admin UI
 

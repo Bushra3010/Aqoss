@@ -42,9 +42,8 @@ export const isSupabaseConfigured = Boolean(env.supabaseUrl && env.supabaseAnonK
 
 /**
  * Demo mode runs the whole platform against an in-memory dataset with no
- * database at all. It turns on automatically when Supabase is not configured,
- * and can be forced either way with DEMO_MODE.
+ * database at all — for local development only. It is on solely when
+ * DEMO_MODE=true; it never switches itself on, so a deployment missing its
+ * Supabase settings shows /setup instead of quietly serving sample data.
  */
-export const isDemoMode =
-  process.env.DEMO_MODE === 'true' ||
-  (process.env.DEMO_MODE !== 'false' && !isSupabaseConfigured);
+export const isDemoMode = process.env.DEMO_MODE === 'true';

@@ -6,8 +6,7 @@ import { headers } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { registerSchema } from '@/lib/validation/schemas';
-import { env, isDemoMode } from '@/lib/env';
-import { DEMO_ACCOUNTS } from '@/lib/demo/store';
+import { env } from '@/lib/env';
 import { getSiteBase } from '@/lib/tenant';
 import { siteHome } from '@/lib/site-url';
 import { safeLocalPath } from '@/lib/safe-path';
@@ -20,36 +19,6 @@ import { safeLocalPath } from '@/lib/safe-path';
  */
 
 export type AuthState = { error?: string; success?: string };
-
-/**
- * One-click sign-in for the demo accounts (demo mode only).
- *
- * The email must be one of the seeded accounts and demo mode must be on, so
- * this cannot become a back door once a real Supabase project is connected —
- * `isDemoMode` is false the moment credentials are configured.
- */
-export async function demoSignIn(email: string, redirectTo: string): Promise<AuthState> {
-  if (!isDemoMode) {
-    return { error: 'Demo sign-in is only available in demo mode.' };
-  }
-
-  const account = DEMO_ACCOUNTS.find((a) => a.email === email);
-  if (!account) {
-    return { error: 'Unknown demo account.' };
-  }
-
-  const supabase = createServerSupabase();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: account.email,
-    password: account.password,
-  });
-
-  if (error) return { error: 'Could not sign in to that demo account.' };
-
-  revalidatePath('/', 'layout');
-  const target = safeLocalPath(redirectTo, '/');
-  redirect(target !== '/' ? target : siteHome(getSiteBase()));
-}
 
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get('email') ?? '').trim();
