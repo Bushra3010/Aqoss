@@ -31,6 +31,12 @@ function label(status: string) {
   return status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
 }
 
+const COLUMNS = ['Guest', 'Hotel', 'Room Type', 'Check-in', 'Status', 'Amount', ''];
+/** Labels for the phone card layout (`.responsive-table` in globals.css). */
+const COLUMN_LABELS = Object.fromEntries(
+  COLUMNS.flatMap((h, i) => (h ? [[`--h${i + 1}`, JSON.stringify(h)]] : [[`--h${i + 1}`, 'none'], [`--p${i + 1}`, '0']])),
+) as React.CSSProperties;
+
 export interface RecentBookingRow {
   id: string;
   guest: string;
@@ -66,10 +72,10 @@ export function RecentBookings({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="responsive-table w-full text-sm" style={COLUMN_LABELS}>
           <thead>
             <tr className="border-y border-slate-100 bg-slate-50/60 text-left">
-              {['Guest', 'Hotel', 'Room Type', 'Check-in', 'Status', 'Amount', ''].map((h, i) => (
+              {COLUMNS.map((h, i) => (
                 <th
                   key={h || i}
                   scope="col"

@@ -66,7 +66,7 @@ export default async function ReportsPage({
         <button type="submit" className="btn-outline">Apply</button>
       </form>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-4">
+      <div className="mb-8 grid gap-3 sm:gap-4 sm:grid-cols-4 grid-cols-2">
         <StatTile label="Bookings" value={stats.totalBookings} />
         <StatTile label="Revenue collected" value={formatCurrency(stats.revenue)} />
         <StatTile label="Cancelled" value={stats.cancelledBookings} />

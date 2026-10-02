@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -53,12 +54,25 @@ export function FilterForm({ className, children }: { className?: string; childr
     }
   }
 
-  const active = [...searchParams.keys()].length > 0;
+  const activeCount = [...searchParams.keys()].length;
+  const active = activeCount > 0;
+  // On phones the fields fold away behind one button so the list is visible
+  // first; from `sm` up they are always shown.
+  const [open, setOpen] = useState(false);
 
   return (
     <form
       role="search"
-      className={cn(className, 'transition-opacity', pending && 'opacity-60')}
+      // One layout for every list: fields share the row and wrap onto the next
+      // rather than shrinking past a readable width (the content column is
+      // narrow on tablets, beside the sidebar). `cn` lets this `flex` replace a
+      // page's own `flex`/`grid`; pages only add spacing.
+      className={cn(
+        className,
+        'flex flex-wrap items-center gap-2 transition-opacity',
+        '[&>div>*]:min-w-[10rem] [&>div>*]:flex-1 [&>div>*]:basis-40',
+        pending && 'opacity-60',
+      )}
       onChange={onChange}
       onSubmit={(event) => {
         event.preventDefault();
@@ -66,7 +80,22 @@ export function FilterForm({ className, children }: { className?: string; childr
       }}
       aria-busy={pending}
     >
-      <div key={generation} className="contents">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="btn-outline w-full justify-between sm:hidden"
+      >
+        <span className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+          Search &amp; filters
+          {active ? (
+            <span className="rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white">{activeCount}</span>
+          ) : null}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 transition', open && 'rotate-180')} aria-hidden="true" />
+      </button>
+      <div key={generation} className={cn(open ? 'contents' : 'hidden', 'sm:contents')}>
         {children}
       </div>
       {active ? (
@@ -77,7 +106,7 @@ export function FilterForm({ className, children }: { className?: string; childr
             clearTimeout(timer.current);
             clearing.current = true;
           }}
-          className="btn-ghost shrink-0 self-center text-sm"
+          className={cn('btn-ghost shrink-0 self-center text-sm', !open && 'hidden sm:inline-flex')}
         >
           Clear
         </Link>

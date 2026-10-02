@@ -77,7 +77,7 @@ export async function PaymentsView({
         action={newHref ? <Link href={newHref} className="btn-primary">+ Record payment</Link> : null}
       />
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid gap-3 sm:gap-4 grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Received"
           value={formatCurrency(totals.net)}

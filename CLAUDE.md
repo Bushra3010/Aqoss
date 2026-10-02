@@ -178,6 +178,14 @@ To run a second dev server beside another one, give it its own build folder:
 `NEXT_DIST_DIR=.next-alt next dev -p 3001` (the `aqoss-dev-alt` launch config). Two servers on
 one `.next` overwrite each other.
 
+**Phones**: admin list tables become labelled cards below `sm` (`.responsive-table` in
+`globals.css`; `Table` in `shared.tsx` passes each header as a `--hN` CSS variable, so pages
+need nothing extra — an empty header means an unlabelled action cell). `FilterForm` owns the
+filter layout (wrapping row, fields never under 10rem) and folds behind a "Search & filters"
+button on phones; pages pass only spacing. Grids that hold a chart or table need
+`grid-cols-[minmax(0,1fr)]`, or their one column grows to the content's width and runs off
+the screen.
+
 Dashboard pieces live in `src/components/admin/dashboard/`. Cards are `rounded-2xl border
 border-slate-200 bg-white`, section titles `text-base font-bold`, and supporting copy
 `text-sm text-slate-500`. Charts use one hue per series — blue for bookings, green for revenue.

@@ -50,7 +50,7 @@ export default async function HotelLeadsPage({
         description={`Guests who entered their details but did not pay within ${env.bookingHoldMinutes} minutes. Call or email them to finish the booking.`}
       />
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-5 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
         <StatTile label="New" value={count('NEW')} href={`${base}?status=NEW`} />
         <StatTile label="Contacted" value={count('CONTACTED')} href={`${base}?status=CONTACTED`} />
         <StatTile label="Converted" value={count('CONVERTED')} hint="Paid after follow-up" href={`${base}?status=CONVERTED`} />

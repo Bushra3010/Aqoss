@@ -117,8 +117,21 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
     <>
       <PageHeader
         title={q ? `Results for “${q}”` : 'Search'}
-        description={q ? `${total} match${total === 1 ? '' : 'es'} across hotels, websites, bookings and customers.` : 'Type in the search bar above to find hotels, websites, bookings and customers.'}
+        description={q ? `${total} match${total === 1 ? '' : 'es'} across hotels, websites, bookings and customers.` : 'Find hotels, websites, bookings and customers.'}
       />
+
+      <form action="/admin/search" role="search" className="relative mb-5 max-w-xl">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" aria-hidden="true" />
+        <input
+          name="q"
+          type="search"
+          defaultValue={q}
+          autoFocus={!q}
+          placeholder="Hotel, city, booking reference, guest or email"
+          aria-label="Search"
+          className="input pl-11"
+        />
+      </form>
 
       {q && !total ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">

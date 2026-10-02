@@ -44,7 +44,7 @@ export default async function HotelDetailPage({ params }: { params: { id: string
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 sm:gap-4 sm:grid-cols-3 grid-cols-2">
         <StatTile label="Websites" value={h.websites?.length ?? 0} href="/admin/websites" />
         <StatTile label="Room types" value={h.room_types?.length ?? 0} href={`/admin/rooms?hotel=${h.id}`} />
         <StatTile label="Tax rate" value={`${h.tax_percent}%`} />

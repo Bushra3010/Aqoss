@@ -82,10 +82,19 @@ export function AdminTopBar({
             </kbd>
           </form>
 
+          {/* Phones have no room for the field: a button opens the search page. */}
+          <Link
+            href={searchAction}
+            className="ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 sm:hidden"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </Link>
+
           {/* ml-auto, not flex-1: the search field is width-capped, so without
               this the leftover space collects to the right of the avatar
               instead of before it. */}
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
             {canReadNotifications ? (
               <Link
                 href="/admin/notifications"

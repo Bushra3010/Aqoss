@@ -138,3 +138,83 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
 }
+
+/*
+ * Admin list tables on phones: each row becomes a card and every cell is
+ * labelled with its column header. The labels come from CSS variables
+ * (--h1 … --h12) that `Table` in components/admin/shared.tsx sets from its
+ * headers, so no page has to repeat them. Cells keep their own content and
+ * links; only the layout changes. From `sm` up it is an ordinary table.
+ */
+@media (max-width: 639.98px) {
+  .responsive-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .responsive-table,
+  .responsive-table tbody {
+    display: block;
+  }
+  .responsive-table tbody > tr {
+    display: block;
+    padding: 0.75rem 1rem;
+  }
+  /* The label sits in a fixed left margin; the cell's own content flows as
+     usual beside it, so stacked lines (name over email) and inline badges
+     keep their shape. */
+  .responsive-table tbody > tr > td {
+    display: block;
+    position: relative;
+    min-height: 1.75rem;
+    padding: 0.3rem 0 0.3rem 7.25rem !important;
+    text-align: left !important;
+    white-space: normal !important;
+    border: 0;
+  }
+  .responsive-table tbody > tr > td::before {
+    position: absolute;
+    left: 0;
+    top: 0.45rem;
+    width: 6.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgb(100 116 139);
+  }
+  /* The first cell is the row's title: full width, no label. */
+  .responsive-table tbody > tr > td:first-child {
+    padding-left: 0 !important;
+    padding-bottom: 0.4rem !important;
+    font-weight: 500;
+  }
+  /* The empty-state cell spans the card. */
+  .responsive-table tbody > tr > td[colspan] {
+    padding-left: 0 !important;
+  }
+  .responsive-table tbody > tr > td:nth-child(2)::before { content: var(--h2); }
+  .responsive-table tbody > tr > td:nth-child(3)::before { content: var(--h3); }
+  .responsive-table tbody > tr > td:nth-child(4)::before { content: var(--h4); }
+  .responsive-table tbody > tr > td:nth-child(5)::before { content: var(--h5); }
+  .responsive-table tbody > tr > td:nth-child(6)::before { content: var(--h6); }
+  .responsive-table tbody > tr > td:nth-child(7)::before { content: var(--h7); }
+  .responsive-table tbody > tr > td:nth-child(8)::before { content: var(--h8); }
+  .responsive-table tbody > tr > td:nth-child(9)::before { content: var(--h9); }
+  .responsive-table tbody > tr > td:nth-child(10)::before { content: var(--h10); }
+  .responsive-table tbody > tr > td:nth-child(11)::before { content: var(--h11); }
+  .responsive-table tbody > tr > td:nth-child(12)::before { content: var(--h12); }
+  .responsive-table tbody > tr > td[colspan]::before { content: none; }
+  /* A column without a header (actions) has no label, so no indent. */
+  .responsive-table tbody > tr > td:nth-child(2) { padding-left: var(--p2, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(3) { padding-left: var(--p3, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(4) { padding-left: var(--p4, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(5) { padding-left: var(--p5, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(6) { padding-left: var(--p6, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(7) { padding-left: var(--p7, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(8) { padding-left: var(--p8, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(9) { padding-left: var(--p9, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(10) { padding-left: var(--p10, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(11) { padding-left: var(--p11, 7.25rem) !important; }
+  .responsive-table tbody > tr > td:nth-child(12) { padding-left: var(--p12, 7.25rem) !important; }
+}

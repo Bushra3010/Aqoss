@@ -29,7 +29,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
         action={<Link href="/admin/customers" className="btn-ghost">Back</Link>}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid gap-3 sm:gap-4 sm:grid-cols-4 grid-cols-2">
         <StatTile label="Total bookings" value={data.stats.totalBookings} />
         <StatTile label="Total spend" value={formatCurrency(data.stats.totalSpend)} />
         <StatTile label="Upcoming" value={data.upcoming.length} />

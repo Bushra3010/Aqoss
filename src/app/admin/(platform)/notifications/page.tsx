@@ -64,7 +64,7 @@ export default async function NotificationsPage({
         description="Booking events queue here, then a worker delivers them. Templates are configurable per hotel."
       />
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-3">
+      <div className="mb-5 grid gap-3 sm:gap-4 sm:grid-cols-3 grid-cols-2">
         <StatTile label="Queued" value={queued.count ?? 0} hint="Waiting to send" />
         <StatTile label="Sent" value={sent.count ?? 0} />
         <StatTile label="Failed" value={failed.count ?? 0} hint="After 3 attempts" />

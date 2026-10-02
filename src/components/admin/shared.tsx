@@ -55,10 +55,18 @@ export function Table({
   empty?: string;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : Boolean(children);
+  // Column labels for the phone card layout (`.responsive-table` in globals.css).
+  // An empty header becomes `none`, so that cell gets no label at all.
+  const labels = Object.fromEntries(
+    headers.map((h, i) => {
+      const label = typeof h === 'string' ? h : h.label;
+      return label ? [[`--h${i + 1}`, JSON.stringify(label)]] : [[`--h${i + 1}`, 'none'], [`--p${i + 1}`, '0']];
+    }).flat(),
+  ) as React.CSSProperties;
 
   return (
     <div className="card overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="responsive-table w-full text-sm" style={labels}>
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
             {headers.map((h, i) => {
