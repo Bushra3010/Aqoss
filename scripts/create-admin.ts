@@ -2,9 +2,11 @@
  * Create the first CRM login on a real Supabase project.
  *
  *   npm run admin:create -- --email=you@example.com --name="Your Name"
+ *   npm run admin:create -- --email=you@example.com --password='your password'
  *
- * Makes a Super Admin with access to every hotel and a strong random password,
- * printed once to this terminal — change it under My account after signing in.
+ * Makes a Super Admin with access to every hotel. Without --password it sets a
+ * strong random one, printed once to this terminal; either way, change it
+ * under My account after signing in.
  * Everyone else is then added from Users & Roles in the CRM.
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY in .env.local.
@@ -26,6 +28,11 @@ if (!url || !key) {
 const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const email = arg('email')?.trim().toLowerCase();
 const name = arg('name')?.trim() || 'Super Admin';
+const chosenPassword = arg('password');
+if (chosenPassword !== undefined && chosenPassword.length < 8) {
+  console.error('The password must be at least 8 characters.');
+  process.exit(1);
+}
 if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
   console.error('Usage: npm run admin:create -- --email=you@example.com --name="Your Name"');
   process.exit(1);
@@ -55,7 +62,7 @@ async function main() {
   const { data: existing } = await db.from('profiles').select('id').ilike('email', email!).maybeSingle();
   if (existing) throw new Error(`${email} already has an account. Use another email, or manage it from Users & Roles.`);
 
-  const password = strongPassword();
+  const password = chosenPassword ?? strongPassword();
   const { data: created, error } = await db.auth.admin.createUser({
     email: email!,
     password,
@@ -72,7 +79,7 @@ async function main() {
 
   console.log('\nSuper Admin created.');
   console.log(`  Email:    ${email}`);
-  console.log(`  Password: ${password}`);
+  console.log(chosenPassword ? '  Password: the one you chose' : `  Password: ${password}`);
   console.log('\nSign in at /admin/login, then change the password under My account.');
 }
 
