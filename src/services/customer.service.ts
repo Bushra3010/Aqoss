@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { todayISO } from '@/lib/utils';
+import { ilikeTerm } from '@/lib/admin/search-term';
 
 /** The 360° customer view the CRM shows (PRD §25). */
 export async function getCustomerProfile(customerId: string) {
@@ -63,8 +64,8 @@ export async function listCustomers(input: { search?: string; limit?: number } =
     .order('created_at', { ascending: false })
     .limit(input.limit ?? 50);
 
-  if (input.search) {
-    const term = `%${input.search}%`;
+  const term = ilikeTerm(input.search);
+  if (term) {
     query = query.or(`full_name.ilike.${term},email.ilike.${term},mobile.ilike.${term}`);
   }
 

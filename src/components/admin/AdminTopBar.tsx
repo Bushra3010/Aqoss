@@ -13,7 +13,7 @@ export function AdminTopBar({
   main,
   admin,
   panel,
-  searchAction = '/admin/bookings',
+  searchAction = '/admin/search',
 }: {
   user: { name: string; role: string };
   notifications: number;
@@ -22,7 +22,7 @@ export function AdminTopBar({
   main: NavItem[];
   admin: NavItem[];
   panel?: PanelContext;
-  /** Where the search box submits; a hotel panel searches its own bookings. */
+  /** Where the search box submits: every section at once, or a hotel panel's own bookings. */
   searchAction?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);

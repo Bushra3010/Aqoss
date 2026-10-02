@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { websiteAdminUrl, websiteHost } from '@/lib/site-url';
+import { websiteAdminUrl, websiteHost, websiteUrl } from '@/lib/site-url';
+import { ilikeTerm } from '@/lib/admin/search-term';
+import { FilterForm } from '@/components/admin/FilterForm';
 import type { Metadata } from 'next';
 import { getAdminSession, can } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
@@ -11,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Websites · AQOSS CRM' };
 
 /** Website management (PRD §22). Every site here runs the same template. */
-export default async function WebsitesPage() {
+export default async function WebsitesPage({ searchParams }: { searchParams: { q?: string; status?: string } }) {
   const session = await getAdminSession();
   if (!can(session, 'websites.read')) return <NoAccess />;
 
@@ -22,6 +24,9 @@ export default async function WebsitesPage() {
     .limit(200);
 
   if (session!.hotelScope.length) query = query.in('hotel_id', session!.hotelScope);
+  if (searchParams.status) query = query.eq('status', searchParams.status);
+  const term = ilikeTerm(searchParams.q);
+  if (term) query = query.or(`name.ilike.${term},slug.ilike.${term}`);
 
   const { data } = await query;
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -39,9 +44,20 @@ export default async function WebsitesPage() {
         }
       />
 
+      <FilterForm className="mb-4 flex flex-wrap gap-2">
+        <input name="q" type="search" className="input max-w-xs" placeholder="Search by hotel or website name" defaultValue={searchParams.q ?? ''} />
+        <select name="status" className="input max-w-[10rem]" defaultValue={searchParams.status ?? ''}>
+          <option value="">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="DRAFT">Draft</option>
+          <option value="INACTIVE">Inactive</option>
+          <option value="SUSPENDED">Suspended</option>
+        </select>
+      </FilterForm>
+
       <Table
-        headers={['Website', 'Hotel', 'Domain', 'Status', { label: 'Actions', align: 'right' }]}
-        empty="No websites yet."
+        headers={['Website', 'Hotel', 'Address', 'Status', { label: 'Actions', align: 'right' }]}
+        empty={searchParams.q || searchParams.status ? 'No websites match this filter.' : 'No websites yet.'}
       >
         {websites.map((site) => {
           const hotel = Array.isArray(site.hotels) ? site.hotels[0] : site.hotels;
@@ -69,8 +85,8 @@ export default async function WebsitesPage() {
                 </Link>
               </Td>
               <Td>
-                {/* The platform subdomain always works; a custom domain is extra. */}
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{websiteHost(site.slug)}</code>
+                {/* Where the site actually opens: its subdomain, or /site/<slug> on hosts without subdomains. */}
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{websiteUrl(site.slug).replace(/^https?:\/\//, '')}</code>
                 {primary && primary.hostname !== websiteHost(site.slug) ? (
                   <p className="mt-1 text-xs text-slate-500">{primary.hostname}</p>
                 ) : null}

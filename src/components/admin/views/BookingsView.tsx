@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDate, todayISO } from '@/lib/utils';
 import { FilterForm } from '@/components/admin/FilterForm';
 import { SearchSelect } from '@/components/admin/SearchSelect';
+import { ilikeTerm } from '@/lib/admin/search-term';
 
 export interface BookingsSearch {
   q?: string;
@@ -65,10 +66,8 @@ export async function BookingsView({
   if (searchParams.to) query = query.lte('check_in', searchParams.to);
   if (searchParams.filter === 'checkin') query = query.eq('check_in', todayISO());
   if (searchParams.filter === 'checkout') query = query.eq('check_out', todayISO());
-  if (searchParams.q) {
-    const term = `%${searchParams.q}%`;
-    query = query.or(`reference.ilike.${term},guest_name.ilike.${term},guest_email.ilike.${term}`);
-  }
+  const term = ilikeTerm(searchParams.q);
+  if (term) query = query.or(`reference.ilike.${term},guest_name.ilike.${term},guest_email.ilike.${term}`);
 
   const { data } = await query;
   /* eslint-disable @typescript-eslint/no-explicit-any */
