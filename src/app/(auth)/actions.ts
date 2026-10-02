@@ -10,6 +10,7 @@ import { env, isDemoMode } from '@/lib/env';
 import { DEMO_ACCOUNTS } from '@/lib/demo/store';
 import { getSiteBase } from '@/lib/tenant';
 import { siteHome } from '@/lib/site-url';
+import { safeLocalPath } from '@/lib/safe-path';
 
 /**
  * Customer authentication (PRD §11), built on Supabase Auth.
@@ -46,7 +47,8 @@ export async function demoSignIn(email: string, redirectTo: string): Promise<Aut
   if (error) return { error: 'Could not sign in to that demo account.' };
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') && redirectTo !== '/' ? redirectTo : siteHome(getSiteBase()));
+  const target = safeLocalPath(redirectTo, '/');
+  redirect(target !== '/' ? target : siteHome(getSiteBase()));
 }
 
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -65,7 +67,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   }
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') ? redirectTo : '/dashboard');
+  redirect(safeLocalPath(redirectTo, '/dashboard'));
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {

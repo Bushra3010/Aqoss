@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { safeLocalPath } from '@/lib/safe-path';
 import { getAdminSession } from '@/lib/auth/session';
 import { AdminLoginForm } from '@/components/admin/AdminLoginForm';
 import { DemoSignIn } from '@/components/DemoSignIn';
@@ -15,8 +17,11 @@ export default async function AdminLoginPage({
   searchParams: { redirect?: string; error?: string };
 }) {
   const session = await getAdminSession();
-  const redirectTo = searchParams.redirect ?? '/admin';
-  if (session) redirect(redirectTo);
+  const redirectTo = safeLocalPath(searchParams.redirect, '/admin');
+  // Sent here by a protected page: carry on. Opened directly (e.g. "Hotel Sign
+  // In" on the website): say who is signed in rather than silently jumping to
+  // the dashboard, so they can switch account.
+  if (session && searchParams.redirect) redirect(redirectTo);
 
   // Super Admin and the single-property manager, which show the two ends of
   // hotel scope. The other staff roles still exist and can be signed into by
@@ -41,6 +46,24 @@ export default async function AdminLoginPage({
           <p className="text-sm text-slate-400">Hotel management CRM</p>
         </div>
 
+        {session ? (
+          <div className="rounded-2xl bg-white p-7 shadow-xl">
+            <h1 className="text-lg font-bold text-slate-900">You&apos;re already signed in</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              as <span className="font-semibold text-slate-800">{session.fullName ?? session.email}</span>
+              {session.roleName ? ` · ${session.roleName}` : ''}
+            </p>
+            <Link href={redirectTo} className="btn-primary mt-6 w-full justify-center">
+              Continue to dashboard
+            </Link>
+            <form action="/auth/signout" method="post" className="mt-3">
+              <input type="hidden" name="next" value="/admin/login" />
+              <button type="submit" className="btn-outline w-full justify-center">
+                Sign in as someone else
+              </button>
+            </form>
+          </div>
+        ) : (
         <div className="rounded-2xl bg-white p-7 shadow-xl">
           <h1 className="text-lg font-bold text-slate-900">Sign in</h1>
           <p className="mt-1 text-sm text-slate-500">Staff access only.</p>
@@ -56,6 +79,7 @@ export default async function AdminLoginPage({
 
           <DemoSignIn accounts={demoAccounts} redirectTo={redirectTo} />
         </div>
+        )}
       </div>
     </div>
   );

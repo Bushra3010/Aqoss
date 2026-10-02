@@ -10,7 +10,8 @@ import { AqossMark } from '@/components/platform/Art';
 import { cn } from '@/lib/utils';
 import { ABOUT, NAV, RESOURCES } from '@/components/platform/nav';
 
-export function PlatformHeader() {
+/** `signedIn`: a staff member is signed in, so offer their dashboard instead of sign-in. */
+export function PlatformHeader({ signedIn = false }: { signedIn?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
@@ -78,8 +79,8 @@ export function PlatformHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 xl:ml-6">
-          <Link href="/admin/login" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-[#0F172A] hover:bg-slate-100 sm:inline-flex">
-            Hotel Sign In
+          <Link href={signedIn ? '/admin' : '/admin/login'} className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-[#0F172A] hover:bg-slate-100 sm:inline-flex">
+            {signedIn ? 'Dashboard' : 'Hotel Sign In'}
           </Link>
           <a href="/#book-demo" className="whitespace-nowrap rounded-lg bg-[#0B2545] px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-[#003358]">
             Book a Demo
@@ -103,8 +104,8 @@ export function PlatformHeader() {
               {item.label}
             </a>
           ))}
-          <Link href="/admin/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-[#003358] hover:bg-slate-50">
-            Hotel Sign In
+          <Link href={signedIn ? '/admin' : '/admin/login'} className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-[#003358] hover:bg-slate-50">
+            {signedIn ? 'Dashboard' : 'Hotel Sign In'}
           </Link>
         </nav>
       ) : null}
