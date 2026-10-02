@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createMiddlewareSupabase } from '@/lib/supabase/middleware';
 import { isDemoMode, isSupabaseConfigured } from '@/lib/env';
 import { DEMO_SESSION_COOKIE } from '@/lib/demo/constants';
-import { isPlatformHost } from '@/lib/site-url';
+import { isPlatformHost, SITE_PATH_PREFIX } from '@/lib/site-url';
 import { PLATFORM_PAGES } from '@/components/platform/nav';
 
 const PREVIEW_COOKIE = 'aqoss_preview_site';
@@ -34,7 +34,30 @@ export async function middleware(request: NextRequest) {
   }
 
   const previewParam = searchParams.get('preview_site');
-  const previewSlug = previewParam ?? request.cookies.get(PREVIEW_COOKIE)?.value ?? null;
+  const previewCookie = request.cookies.get(PREVIEW_COOKIE)?.value ?? null;
+  let previewSlug = previewParam ?? previewCookie;
+
+  // On the main domain a preview opens as `/site/<slug>`, like any hotel there,
+  // so `/` stays the AQOSS website and the hotel's own links keep working.
+  if (previewParam && isPlatformHost(host) && /^[a-z0-9-]+$/.test(previewParam)) {
+    const to = request.nextUrl.clone();
+    to.pathname = `${SITE_PATH_PREFIX}/${previewParam}`;
+    to.searchParams.delete('preview_site');
+    const redirect = NextResponse.redirect(to);
+    redirect.cookies.set(PREVIEW_COOKIE, previewParam, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 });
+    return redirect;
+  }
+
+  // Which hotel an explicit address names, before any cookie is consulted.
+  const sitePath = isPlatformHost(host) ? pathname.match(/^\/site\/([a-z0-9-]+)(\/.*)?$/) : null;
+  const platformPage = pathname === '/' || PLATFORM_PAGES.includes(pathname.slice(1));
+  // A preview only ever applies to the hotel it was opened for: the AQOSS
+  // pages end it, and a link to another hotel wins over it.
+  const endPreview =
+    Boolean(previewCookie) &&
+    isPlatformHost(host) &&
+    (platformPage || (sitePath !== null && sitePath[1] !== previewCookie));
+  if (endPreview) previewSlug = null;
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-aqoss-host', host);
@@ -49,7 +72,6 @@ export async function middleware(request: NextRequest) {
   // cookie, so its own links — /rooms, /booking/…, /login, /api/… — keep
   // resolving to it. `getTenant()` still only shows a published website.
   const onMainDomain = isPlatformHost(host);
-  const sitePath = onMainDomain ? pathname.match(/^\/site\/([a-z0-9-]+)(\/.*)?$/) : null;
   const usesHotelPages =
     onMainDomain && !sitePath && pathname !== '/' && !pathname.startsWith('/admin') && !pathname.startsWith('/platform');
   const siteSlug = sitePath?.[1] ?? (usesHotelPages ? request.cookies.get(SITE_COOKIE)?.value ?? null : null);
@@ -61,9 +83,10 @@ export async function middleware(request: NextRequest) {
   //
   // The AQOSS website's own pages (`/about`, `/ai-website`, …) live under
   // /platform too; on a hotel subdomain those paths are simply not found.
-  const platformPage = pathname === '/' || PLATFORM_PAGES.includes(pathname.slice(1));
   if (platformPage) requestHeaders.delete(SITE_HEADER);
-  const toPlatform = platformPage && !previewSlug && isPlatformHost(host);
+  // A different hotel's cookie never outranks the preview being shown.
+  if (previewSlug && siteSlug && siteSlug !== previewSlug) requestHeaders.delete('x-aqoss-preview-site');
+  const toPlatform = platformPage && isPlatformHost(host);
   // Clone rather than `new URL('/platform', …)`, which would drop the hotel
   // search's query string.
   const platformUrl = request.nextUrl.clone();
@@ -88,6 +111,8 @@ export async function middleware(request: NextRequest) {
       path: '/',
       maxAge: 60 * 60,
     });
+  } else if (endPreview) {
+    response.cookies.delete(PREVIEW_COOKIE);
   }
 
   // In demo mode the session is a plain cookie, and middleware runs on the

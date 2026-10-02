@@ -195,7 +195,11 @@ main domain (`aqoss.com`, `www.`, or plain `localhost` in dev — `isPlatformHos
 (`src/app/platform/actions.ts`) is public — validated, honeypot-guarded and rate-limited — and
 writes `demo_requests` (migration 15), shown in the CRM under Demo requests. There is no
 fallback hotel any more: an unknown host resolves to no tenant (404), never to someone else's
-hotel. `?preview_site=` on the main domain still previews a hotel for a signed-in admin.
+hotel. `?preview_site=<slug>` on the main domain redirects to `/site/<slug>` and sets a
+one-hour preview cookie that a signed-in admin's requests honour there. A preview never takes
+over `/` or the other AQOSS pages — visiting them ends it — and an explicit `/site/<other>` link
+wins over it. (It once did take over `/`, so the AQOSS home showed whichever hotel an admin had
+last opened.)
 
 The AQOSS home page's hero search is a plain GET form back to `/` (middleware keeps the query
 string when it rewrites). It only *finds* hotels by name, city or address; each result opens on

@@ -152,7 +152,7 @@ export function getSiteBase(): string {
   const h = headers();
   const site = h.get(SITE_HEADER);
   const host = h.get(HOST_HEADER) ?? h.get('host') ?? '';
-  return site && isPlatformHost(host) && !h.get(PREVIEW_HEADER) ? `${SITE_PATH_PREFIX}/${site}` : '';
+  return site && isPlatformHost(host) ? `${SITE_PATH_PREFIX}/${site}` : '';
 }
 
 /**
