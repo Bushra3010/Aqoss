@@ -339,10 +339,12 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
               </>
             )}
             {hotels.length ? (
-              <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              /* Phones: a swipeable carousel, the next card peeking in, like
+                 Offers & Deals. sm up: the grid. */
+              <ul className="-mx-4 mt-8 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
                 {hotels.map((h) => (
-                  <li key={h.slug}>
-                    <a href={hotelHref(h.slug)} className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+                  <li key={h.slug} className="w-[82%] shrink-0 snap-start sm:w-auto">
+                    <a href={hotelHref(h.slug)} className="group block h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
                       <div className="aspect-[16/9] bg-slate-200">
                         {h.cover ? (
                           // eslint-disable-next-line @next/next/no-img-element
