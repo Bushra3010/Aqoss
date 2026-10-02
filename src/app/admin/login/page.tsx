@@ -18,9 +18,9 @@ export default async function AdminLoginPage({
 }) {
   const session = await getAdminSession();
   const redirectTo = safeLocalPath(searchParams.redirect, '/admin');
-  // Sent here by a protected page: carry on. Opened directly (e.g. "Hotel Sign
-  // In" on the website): say who is signed in rather than silently jumping to
-  // the dashboard, so they can switch account.
+  // Sent here by a protected page while already signed in: carry on. Opened
+  // directly ("Hotel Sign In" on the website) it always shows the form —
+  // signing in replaces the current session and lands on the dashboard.
   if (session && searchParams.redirect) redirect(redirectTo);
 
   // Super Admin and the single-property manager, which show the two ends of
@@ -46,24 +46,6 @@ export default async function AdminLoginPage({
           <p className="text-sm text-slate-400">Hotel management CRM</p>
         </div>
 
-        {session ? (
-          <div className="rounded-2xl bg-white p-7 shadow-xl">
-            <h1 className="text-lg font-bold text-slate-900">You&apos;re already signed in</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              as <span className="font-semibold text-slate-800">{session.fullName ?? session.email}</span>
-              {session.roleName ? ` · ${session.roleName}` : ''}
-            </p>
-            <Link href={redirectTo} className="btn-primary mt-6 w-full justify-center">
-              Continue to dashboard
-            </Link>
-            <form action="/auth/signout" method="post" className="mt-3">
-              <input type="hidden" name="next" value="/admin/login" />
-              <button type="submit" className="btn-outline w-full justify-center">
-                Sign in as someone else
-              </button>
-            </form>
-          </div>
-        ) : (
         <div className="rounded-2xl bg-white p-7 shadow-xl">
           <h1 className="text-lg font-bold text-slate-900">Sign in</h1>
           <p className="mt-1 text-sm text-slate-500">Staff access only.</p>
@@ -79,7 +61,15 @@ export default async function AdminLoginPage({
 
           <DemoSignIn accounts={demoAccounts} redirectTo={redirectTo} />
         </div>
-        )}
+
+        {session ? (
+          <p className="mt-4 text-center text-sm text-slate-400">
+            Already signed in as {session.fullName ?? session.email}.{' '}
+            <Link href="/admin" className="font-semibold text-white hover:underline">
+              Go to dashboard
+            </Link>
+          </p>
+        ) : null}
       </div>
     </div>
   );

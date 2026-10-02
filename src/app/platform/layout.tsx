@@ -3,7 +3,6 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { isPlatformHost } from '@/lib/site-url';
-import { getAdminSession } from '@/lib/auth/session';
 import { DemoBanner } from '@/components/DemoBanner';
 import { AqossMark } from '@/components/platform/Art';
 import { PlatformHeader } from '@/components/platform/PlatformClient';
@@ -16,15 +15,13 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], display: 'swap' });
  * the home page and every page in the menu. Middleware rewrites `/`, `/about`
  * and the solution paths here; on a hotel subdomain all of it is a 404.
  */
-export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
+export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   if (!isPlatformHost(headers().get('x-aqoss-host') ?? headers().get('host') ?? '')) notFound();
-
-  const signedIn = Boolean(await getAdminSession());
 
   return (
     <div className={`${jakarta.className} min-h-screen bg-white text-slate-900`}>
       <DemoBanner />
-      <PlatformHeader signedIn={signedIn} />
+      <PlatformHeader />
       <main>{children}</main>
 
       <footer className="border-t border-slate-200 bg-[#0B1B3F] text-white">
@@ -46,7 +43,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           <FooterColumn title="Resources" links={RESOURCES} />
           <FooterColumn
             title="Company"
-            links={[ABOUT, signedIn ? { href: '/admin', label: 'Dashboard' } : { href: '/admin/login', label: 'Hotel Sign In' }]}
+            links={[ABOUT, { href: '/admin/login', label: 'Hotel Sign In' }]}
           />
         </div>
         <p className="border-t border-white/10 py-6 text-center text-xs text-white/40">
