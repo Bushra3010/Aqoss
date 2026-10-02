@@ -6,7 +6,7 @@
  * deterministic starting point.
  */
 
-import { randomUUID } from 'node:crypto';
+import { resetSeedIds, seedId } from './ids';
 import { buildDataset, type Tables, type Row } from './dataset';
 
 export const DEMO_PASSWORD = 'demo1234';
@@ -77,6 +77,7 @@ type GlobalWithStore = typeof globalThis & { [STORE_KEY]?: DemoStore };
 
 function build(): DemoStore {
   const started = Date.now();
+  resetSeedIds();
 
   const tables = buildDataset({
     hotels: Number(process.env.DEMO_HOTELS ?? 52),
@@ -118,7 +119,7 @@ function seedAccounts(t: Tables) {
   const nowIso = new Date().toISOString();
 
   for (const account of DEMO_ACCOUNTS) {
-    const profileId = randomUUID();
+    const profileId = seedId();
 
     t.profiles.push({
       id: profileId,
@@ -146,7 +147,7 @@ function seedAccounts(t: Tables) {
     if (account.role) {
       const role = t.roles.find((r) => r.key === account.role)!;
       t.admin_users.push({
-        id: randomUUID(),
+        id: seedId(),
         profile_id: profileId,
         role_id: role.id,
         hotel_scope: account.scopeHotelSlug
@@ -198,7 +199,7 @@ function seedHistory(t: Tables) {
     const tax = Math.round((subtotal * Number(hotel.tax_percent)) / 100);
     const total = subtotal + tax;
     const createdAt = new Date(checkIn.getTime() - 14 * 86_400_000).toISOString();
-    const bookingId = randomUUID();
+    const bookingId = seedId();
     const refunded = entry.payment === 'REFUNDED' ? total : 0;
 
     t.bookings.push({
@@ -243,19 +244,19 @@ function seedHistory(t: Tables) {
     });
 
     t.booking_rooms.push({
-      id: randomUUID(), booking_id: bookingId, room_type_id: roomType.id, room_id: null,
+      id: seedId(), booking_id: bookingId, room_type_id: roomType.id, room_id: null,
       room_type_name: roomType.name, rooms: 1, adults: 2, children: 0,
       nightly_rates: [], subtotal, discount: 0, tax, total,
       created_at: createdAt,
     });
 
     t.booking_status_history.push({
-      id: randomUUID(), booking_id: bookingId, from_status: null,
+      id: seedId(), booking_id: bookingId, from_status: null,
       to_status: entry.status, note: null, changed_by: null, created_at: createdAt,
     });
 
     if (entry.payment !== 'PENDING') {
-      const paymentId = randomUUID();
+      const paymentId = seedId();
       t.payments.push({
         id: paymentId, booking_id: bookingId, customer_id: guest.id, hotel_id: hotel.id,
         provider: 'mock', provider_order_id: `mock_order_${i}`,
@@ -267,7 +268,7 @@ function seedHistory(t: Tables) {
       if (entry.payment === 'REFUNDED') seedRefund(t, paymentId, bookingId, total, createdAt);
 
       t.invoices.push({
-        id: randomUUID(), booking_id: bookingId, hotel_id: hotel.id,
+        id: seedId(), booking_id: bookingId, hotel_id: hotel.id,
         invoice_number: `INV-${new Date().getFullYear()}-${String(900001 + i).padStart(6, '0')}`,
         issued_to: guest.full_name, issued_email: guest.email, currency: 'INR',
         subtotal, discount: 0, tax, total,
@@ -280,7 +281,7 @@ function seedHistory(t: Tables) {
     // "write a review" prompt and the moderation queue have content.
     if (i === 1) {
       t.reviews.push({
-        id: randomUUID(), hotel_id: hotel.id, booking_id: bookingId, customer_id: guest.id,
+        id: seedId(), hotel_id: hotel.id, booking_id: bookingId, customer_id: guest.id,
         author_name: guest.full_name, rating: 5,
         title: 'Genuinely lovely stay',
         comment: 'Everything from check-in to check-out was smooth, and the room was exactly as pictured.',
@@ -386,7 +387,7 @@ function seedBookingVolume(t: Tables) {
       createdAt.setHours(8 + Math.floor(seedRand(seed + 17) * 12));
       const createdIso = createdAt.toISOString();
 
-      const bookingId = randomUUID();
+      const bookingId = seedId();
 
       const guest =
         `${FIRST_NAMES[Math.floor(seedRand(seed + 19) * FIRST_NAMES.length)]} ` +
@@ -399,7 +400,7 @@ function seedBookingVolume(t: Tables) {
       let customer = customersByEmail.get(guestEmail);
       if (!customer) {
         customer = {
-          id: randomUUID(),
+          id: seedId(),
           full_name: guest,
           email: guestEmail,
           mobile: `+91 98${String(100000 + customersByEmail.size).slice(0, 6)}`,
@@ -459,18 +460,18 @@ function seedBookingVolume(t: Tables) {
       });
 
       t.booking_rooms.push({
-        id: randomUUID(), booking_id: bookingId, room_type_id: roomType.id, room_id: null,
+        id: seedId(), booking_id: bookingId, room_type_id: roomType.id, room_id: null,
         room_type_name: roomType.name, rooms, adults: 2, children: 0,
         nightly_rates: [], subtotal, discount: 0, tax, total, created_at: createdIso,
       });
 
       t.booking_status_history.push({
-        id: randomUUID(), booking_id: bookingId, from_status: null, to_status: status,
+        id: seedId(), booking_id: bookingId, from_status: null, to_status: status,
         note: null, changed_by: null, created_at: createdIso,
       });
 
       if (paid > 0) {
-        const paymentId = randomUUID();
+        const paymentId = seedId();
         t.payments.push({
           id: paymentId, booking_id: bookingId, customer_id: customer.id, hotel_id: hotel.id,
           provider: 'mock', provider_order_id: `mock_order_bg_${counter}`,
@@ -505,7 +506,7 @@ export type { Tables, Row };
 /** A refunded seed payment gets the refund row the payments ledger reads. */
 function seedRefund(t: Tables, paymentId: string, bookingId: string, amount: number, at: string) {
   t.refunds.push({
-    id: randomUUID(), payment_id: paymentId, booking_id: bookingId, amount,
+    id: seedId(), payment_id: paymentId, booking_id: bookingId, amount,
     reason: 'Cancelled by guest', status: 'REFUNDED', provider_refund_id: `mock_rfnd_${paymentId.slice(0, 8)}`,
     raw_response: {}, processed_by: null, processed_at: at, created_at: at,
   });

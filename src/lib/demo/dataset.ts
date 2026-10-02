@@ -8,7 +8,7 @@
  * server process, so bookings you make are real until you restart.
  */
 
-import { randomUUID } from 'node:crypto';
+import { seedId } from './ids';
 import { websiteHost } from '@/lib/site-url';
 
 export type Row = Record<string, any>;
@@ -216,7 +216,7 @@ function seedRbac(t: Tables) {
   ];
 
   for (const [key, module, action] of permissionKeys) {
-    t.permissions.push({ id: randomUUID(), key, module, action, description: null, created_at: now() });
+    t.permissions.push({ id: seedId(), key, module, action, description: null, created_at: now() });
   }
 
   const roleDefs: [string, string, string][] = [
@@ -229,7 +229,7 @@ function seedRbac(t: Tables) {
   ];
 
   for (const [key, name, description] of roleDefs) {
-    t.roles.push({ id: randomUUID(), key, name, description, is_system: true, created_at: now(), updated_at: now() });
+    t.roles.push({ id: seedId(), key, name, description, is_system: true, created_at: now(), updated_at: now() });
   }
 
   const grants: Record<string, string[]> = {
@@ -274,7 +274,7 @@ function seedRbac(t: Tables) {
   }
 
   t.website_templates.push({
-    id: randomUUID(), key: 'classic', name: 'Classic',
+    id: seedId(), key: 'classic', name: 'Classic',
     description: 'The standard AQOSS hotel layout: overview, rooms, location, rules, reviews',
     preview_url: null, is_active: true, created_at: now(),
   });
@@ -317,7 +317,7 @@ function seedPlatform(t: Tables) {
 
   for (const [event_key, channel, subject, body] of templates) {
     t.notification_templates.push({
-      id: randomUUID(), hotel_id: null, event_key, channel, subject, body,
+      id: seedId(), hotel_id: null, event_key, channel, subject, body,
       is_active: true, created_at: now(), updated_at: now(),
     });
   }
@@ -334,7 +334,7 @@ function seedCoupons(t: Tables) {
 
   for (const c of coupons) {
     t.coupons.push({
-      id: randomUUID(), offer_id: null, ...c,
+      id: seedId(), offer_id: null, ...c,
       hotel_ids: [], room_type_ids: [], used_count: 0, valid_from: null,
       is_active: true, created_by: null, created_at: now(), updated_at: now(),
     });
@@ -352,7 +352,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   const stars = 3 + Math.floor(rand(index + 1) * 3) * 0.5;
   const basePrice = 2200 + Math.floor(rand(index + 7) * 12) * 450;
 
-  const hotelId = randomUUID();
+  const hotelId = seedId();
 
   t.hotels.push({
     id: hotelId, name, slug,
@@ -387,7 +387,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
 
   for (let i = 0; i < 6; i++) {
     t.hotel_images.push({
-      id: randomUUID(), hotel_id: hotelId, url: photo(`${slug}-${i}`),
+      id: seedId(), hotel_id: hotelId, url: photo(`${slug}-${i}`),
       alt_text: `${name} — photo ${i + 1}`, caption: null,
       is_cover: i === 0, sort_order: i, created_at: now(),
     });
@@ -396,21 +396,21 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   const amenityCount = 7 + Math.floor(rand(index + 5) * 7);
   HOTEL_AMENITIES.slice(0, amenityCount).forEach(([aName, category], i) => {
     t.hotel_amenities.push({
-      id: randomUUID(), hotel_id: hotelId, name: aName, icon: null, category,
+      id: seedId(), hotel_id: hotelId, name: aName, icon: null, category,
       sort_order: i, created_at: now(),
     });
   });
 
   POLICIES.forEach(([policy_type, title, content], i) => {
     t.hotel_policies.push({
-      id: randomUUID(), hotel_id: hotelId, policy_type, title, content,
+      id: seedId(), hotel_id: hotelId, policy_type, title, content,
       sort_order: i, created_at: now(), updated_at: now(),
     });
   });
 
   NEARBY.forEach(([place_type, placeName, km, travel], i) => {
     t.hotel_nearby_places.push({
-      id: randomUUID(), hotel_id: hotelId, name: `${city} ${placeName}`, place_type,
+      id: seedId(), hotel_id: hotelId, name: `${city} ${placeName}`, place_type,
       distance_km: Math.round((km + rand(index + i) * 6) * 10) / 10,
       travel_time: travel, latitude: null, longitude: null,
       sort_order: i, created_at: now(),
@@ -418,7 +418,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   });
 
   // ---- website ----------------------------------------------------------
-  const websiteId = randomUUID();
+  const websiteId = seedId();
 
   t.websites.push({
     id: websiteId, hotel_id: hotelId,
@@ -436,7 +436,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
 
   t.website_domains.push(
     // The platform subdomain, e.g. the-serenity-inn-goa.aqoss.com (or .localhost in dev).
-    { id: randomUUID(), website_id: websiteId, hostname: websiteHost(slug), is_primary: true, is_verified: true, verified_at: now(), created_at: now() },
+    { id: seedId(), website_id: websiteId, hostname: websiteHost(slug), is_primary: true, is_verified: true, verified_at: now(), created_at: now() },
   );
 
   // ---- room types, rooms, inventory, rates ------------------------------
@@ -446,7 +446,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
     const tpl = ROOM_TEMPLATES[ti];
     const price = Math.round((basePrice * tpl.multiplier) / 50) * 50;
     const discount = rand(index + ti + 21) > 0.65 ? 10 : 0;
-    const roomTypeId = randomUUID();
+    const roomTypeId = seedId();
 
     t.room_types.push({
       id: roomTypeId, hotel_id: hotelId, name: tpl.name, slug: slugify(tpl.name),
@@ -461,20 +461,20 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
 
     for (let i = 0; i < 3; i++) {
       t.room_images.push({
-        id: randomUUID(), room_type_id: roomTypeId,
+        id: seedId(), room_type_id: roomTypeId,
         url: photo(`${slug}-room-${ti}-${i}`, 900, 675),
         alt_text: `${tpl.name} at ${name}`, is_cover: i === 0, sort_order: i, created_at: now(),
       });
     }
 
     tpl.amenities.forEach((aName, i) => {
-      t.room_amenities.push({ id: randomUUID(), room_type_id: roomTypeId, name: aName, icon: null, sort_order: i });
+      t.room_amenities.push({ id: seedId(), room_type_id: roomTypeId, name: aName, icon: null, sort_order: i });
     });
 
     const unitCount = 4 + Math.floor(rand(index + ti + 31) * 7);
     for (let i = 0; i < unitCount; i++) {
       t.rooms.push({
-        id: randomUUID(), hotel_id: hotelId, room_type_id: roomTypeId,
+        id: seedId(), hotel_id: hotelId, room_type_id: roomTypeId,
         room_number: `${ti + 1}${String(i + 1).padStart(2, '0')}`,
         floor: String(ti + 1), status: 'AVAILABLE', notes: null,
         created_at: now(), updated_at: now(),
@@ -491,7 +491,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
         rand(index * 31 + ti * 7 + d) > 0.78 ? Math.min(unitCount, 1 + Math.floor(rand(d + ti) * 3)) : 0;
 
       t.room_inventory.push({
-        id: randomUUID(), hotel_id: hotelId, room_type_id: roomTypeId, stay_date,
+        id: seedId(), hotel_id: hotelId, room_type_id: roomTypeId, stay_date,
         total_rooms: unitCount, blocked_rooms: 0, booked_rooms: preBooked,
         is_closed: false, updated_at: now(),
       });
@@ -499,7 +499,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
       const uplift = day === 5 || day === 6 ? 1.25 : day === 0 ? 1.1 : 1;
       if (uplift !== 1) {
         t.room_prices.push({
-          id: randomUUID(), hotel_id: hotelId, room_type_id: roomTypeId, stay_date,
+          id: seedId(), hotel_id: hotelId, room_type_id: roomTypeId, stay_date,
           price: Math.round((price * uplift) / 50) * 50,
           discount_percent: null, min_nights: 1, updated_at: now(),
         });
@@ -508,7 +508,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   }
 
   // ---- transport --------------------------------------------------------
-  const serviceId = randomUUID();
+  const serviceId = seedId();
   const seatCapacity = pick([4, 6, 12], index);
 
   t.transport_services.push({
@@ -522,7 +522,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   });
 
   for (const [routeName, pickup, drop, km, minutes, base, perSeat] of TRANSPORT_ROUTES) {
-    const routeId = randomUUID();
+    const routeId = seedId();
 
     t.transport_routes.push({
       id: routeId, hotel_id: hotelId, name: routeName,
@@ -535,7 +535,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
     for (let d = 0; d < options.transportDays; d++) {
       for (const time of ['08:00:00', '17:00:00']) {
         t.transport_slots.push({
-          id: randomUUID(), hotel_id: hotelId, route_id: routeId, service_id: serviceId,
+          id: seedId(), hotel_id: hotelId, route_id: routeId, service_id: serviceId,
           depart_date: isoDate(d), depart_time: time,
           seat_capacity: seatCapacity, booked_seats: 0,
           price_override: null, status: 'ACTIVE',
@@ -548,14 +548,14 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   // ---- offers & reviews -------------------------------------------------
   t.offers.push(
     {
-      id: randomUUID(), hotel_id: hotelId, title: 'Stay 3 nights, save 15%',
+      id: seedId(), hotel_id: hotelId, title: 'Stay 3 nights, save 15%',
       description: 'Book three nights or more and receive 15% off the room rate.',
       offer_type: 'PERCENTAGE', discount_percent: 15, discount_amount: null,
       max_discount: null, banner_url: null, valid_from: null, valid_until: isoDate(180),
       is_active: true, sort_order: 0, created_at: now(), updated_at: now(),
     },
     {
-      id: randomUUID(), hotel_id: hotelId, title: 'Breakfast on us',
+      id: seedId(), hotel_id: hotelId, title: 'Breakfast on us',
       description: 'Complimentary breakfast for two on Deluxe rooms and above.',
       offer_type: 'SEASONAL', discount_percent: null, discount_amount: 800,
       max_discount: null, banner_url: null, valid_from: null, valid_until: isoDate(90),
@@ -567,7 +567,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
   for (let i = 0; i < reviewCount; i++) {
     const [rating, title, comment] = REVIEW_SEEDS[(index + i) % REVIEW_SEEDS.length];
     t.reviews.push({
-      id: randomUUID(), hotel_id: hotelId, booking_id: null, customer_id: null,
+      id: seedId(), hotel_id: hotelId, booking_id: null, customer_id: null,
       author_name: pick(GUEST_NAMES, index + i),
       rating, title, comment,
       cleanliness_rating: Math.min(5, rating + (rand(index + i) > 0.5 ? 0 : -1)),

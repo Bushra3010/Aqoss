@@ -75,6 +75,11 @@ Two things to respect there:
   copy and ids stop matching between pages.
 - **Middleware runs on the edge** and cannot import the demo client (`node:crypto`). Anything it
   needs lives in `src/lib/demo/constants.ts`.
+- **Seeded ids are deterministic** (`seedId()` in `src/lib/demo/ids.ts`), never `randomUUID()`.
+  Serverless hosts run several instances, each building its own dataset; with random ids a
+  session cookie from one instance named a profile the next didn't have, so a signed-in super
+  admin got "No access" on alternate requests. Rows written at runtime still live on one
+  instance only — demo mode on a serverless host is for looking around, not for real use.
 
 With neither demo mode nor Supabase, middleware rewrites every request to `/setup`. Keep that
 page free of any import that reaches data — it must render without either.
