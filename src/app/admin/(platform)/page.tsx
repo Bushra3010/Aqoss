@@ -156,8 +156,8 @@ export default async function AdminDashboard({
        * bookings table needs ~700px. Both only hold above 1536px, so below that
        * the rail drops underneath at full width instead of squeezing either.
        */}
-      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_480px]">
-        <div className="space-y-5">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 2xl:grid-cols-[minmax(0,1fr)_480px]">
+        <div className="min-w-0 space-y-5">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -187,7 +187,7 @@ export default async function AdminDashboard({
           </section>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-1">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2 2xl:grid-cols-1">
           <QuickActions permissions={session!.permissions} />
           <UpcomingStays rows={upcoming} />
         </div>

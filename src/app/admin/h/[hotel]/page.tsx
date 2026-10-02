@@ -98,8 +98,8 @@ export default async function HotelOverviewPage({
         />
       </div>
 
-      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_480px]">
-        <div className="space-y-5">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 2xl:grid-cols-[minmax(0,1fr)_480px]">
+        <div className="min-w-0 space-y-5">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-base font-bold text-slate-900">Booking Overview</h2>
             <p className="mt-0.5 text-sm text-slate-500">Bookings at {hotel.name}</p>
