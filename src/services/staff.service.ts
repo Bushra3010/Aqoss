@@ -80,7 +80,7 @@ interface StaffTarget {
 export async function getStaff(adminUserId: string): Promise<StaffTarget | null> {
   const { data } = await createAdminSupabase()
     .from('admin_users')
-    .select('id, profile_id, role_id, hotel_scope, is_active, profiles!inner (email, full_name, mobile)')
+    .select('id, profile_id, role_id, hotel_scope, is_active, profiles!admin_users_profile_id_fkey!inner (email, full_name, mobile)')
     .eq('id', adminUserId)
     .maybeSingle();
   if (!data) return null;

@@ -41,7 +41,7 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
     .from('admin_users')
     .select(
       `hotel_scope, is_active,
-       profiles!inner (full_name, email),
+       profiles!admin_users_profile_id_fkey!inner (full_name, email),
        roles!inner (key, name, role_permissions (permissions (key)))`,
     )
     .eq('profile_id', user.id)

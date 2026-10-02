@@ -88,8 +88,11 @@ export function parseSelect(select: string): ParsedSelect {
       }
 
       const inner = relation.includes('!inner');
-      relation = relation.replace('!inner', '').trim();
-      alias = alias.replace('!inner', '').trim();
+      // Drop modifiers and a foreign-key hint (`profiles!admin_users_profile_id_fkey`):
+      // Postgres needs the hint when two tables are linked twice; the demo
+      // resolves every relation through its one mapping in relations.ts.
+      relation = relation.split('!')[0].trim();
+      alias = alias.split('!')[0].trim();
 
       // `profiles:actor_id(...)` names the FK column rather than a table;
       // fall back to the alias as the relation name in that case.

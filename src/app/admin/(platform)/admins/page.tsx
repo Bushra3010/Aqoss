@@ -24,7 +24,7 @@ export default async function AdminsPage({
   const [{ data: admins }, { data: roles }, { data: hotels }] = await Promise.all([
     supabase
       .from('admin_users')
-      .select('id, profile_id, is_active, hotel_scope, created_at, profiles!inner (full_name, email, mobile), roles!inner (id, key, name)')
+      .select('id, profile_id, is_active, hotel_scope, created_at, profiles!admin_users_profile_id_fkey!inner (full_name, email, mobile), roles!inner (id, key, name)')
       .order('created_at', { ascending: false }),
     supabase.from('roles').select('id, name').order('name'),
     supabase.from('hotels').select('id, name'),
