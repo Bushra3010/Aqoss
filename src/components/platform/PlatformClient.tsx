@@ -32,8 +32,10 @@ export function PlatformHeader() {
   const link = 'whitespace-nowrap text-[15px] font-medium text-slate-700 hover:text-[#003358]';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-6 px-4 sm:px-6">
+    // On phones the bar floats as a rounded card over the page (the home hero
+    // runs up behind it); from sm it is a full-width bar.
+    <header className="sticky top-0 z-40 max-sm:px-3 max-sm:pt-2 sm:border-b sm:border-slate-200/80 sm:bg-white/95 sm:backdrop-blur">
+      <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-6 px-4 max-sm:h-16 max-sm:rounded-2xl max-sm:bg-white max-sm:shadow-lg max-sm:shadow-slate-900/10 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="AQOSS home">
           <AqossMark className="h-9 w-auto" />
           <span className="text-[22px] font-extrabold tracking-tight text-[#003358]">AQOSS</span>
@@ -97,7 +99,7 @@ export function PlatformHeader() {
       </div>
 
       {open ? (
-        <nav aria-label="Main" className="max-h-[calc(100vh-68px)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-3 xl:hidden">
+        <nav aria-label="Main" className="max-h-[calc(100vh-68px)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-3 max-sm:mt-2 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-lg xl:hidden">
           {[...NAV, ...RESOURCES, ABOUT].map((item) => (
             <a key={item.href + item.label} href={item.href} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
               {item.label}

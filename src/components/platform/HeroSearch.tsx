@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BadgeCheck, Building2, CalendarDays, CheckCircle2, Handshake, MapPin, ShieldCheck, User } from 'lucide-react';
-import { todayISO, toISODate } from '@/lib/utils';
+import { BadgeCheck, Building2, CalendarDays, CheckCircle2, ChevronDown, Handshake, MapPin, Search, ShieldCheck, User } from 'lucide-react';
+import { cn, todayISO, toISODate } from '@/lib/utils';
 
 export type HeroSearchValues = {
   q: string;
@@ -46,7 +46,10 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
   const guestLabel = `${guests} Guest${guests > 1 ? 's' : ''}, ${rooms} Room${rooms > 1 ? 's' : ''}`;
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-2xl shadow-slate-900/20 sm:p-6">
+    // From lg one white card holds the search and the promises; below it they
+    // are two cards, as in the mobile design.
+    <div className="lg:rounded-2xl lg:bg-white lg:p-6 lg:shadow-2xl lg:shadow-slate-900/20">
+      <div className="max-lg:rounded-2xl max-lg:bg-white max-lg:p-4 max-lg:shadow-2xl max-lg:shadow-slate-900/20 sm:max-lg:p-6">
       <div className="flex border-b border-slate-100" role="presentation">
         <span className="inline-flex items-center gap-2 border-b-[3px] border-blue-600 px-4 pb-3 text-[15px] font-semibold text-blue-700">
           <Building2 className="h-5 w-5" aria-hidden="true" />
@@ -54,9 +57,9 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
         </span>
       </div>
 
-      <form action="/#hotels" method="get" className="mt-5 rounded-xl border border-slate-100 p-3 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[1.45fr_1fr_1fr_1.1fr_auto]">
-          <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 focus-within:border-blue-500">
+      <form action="/#hotels" method="get" className="mt-5 lg:rounded-xl lg:border lg:border-slate-100 lg:p-3 lg:shadow-sm">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1.45fr_1fr_1fr_1.1fr_auto]">
+          <label className="col-span-2 flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 focus-within:border-blue-500 lg:col-span-1">
             <span className="min-w-0 flex-1">
               <span className="block text-xs font-medium text-slate-600">Destination / Hotel Name</span>
               <input
@@ -67,7 +70,7 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
                 className="mt-1 w-full bg-transparent text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
             </span>
-            <MapPin className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+            <MapPin className="h-5 w-5 shrink-0 text-slate-500 max-lg:order-first" aria-hidden="true" />
           </label>
 
           <DateBox
@@ -86,7 +89,7 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
           />
           <DateBox label="Check-out" name="check_out" value={checkOut} min={checkIn} onChange={setCheckOut} />
 
-          <div className="relative" ref={guestsRef}>
+          <div className="relative col-span-2 lg:col-span-1" ref={guestsRef}>
             <button
               type="button"
               onClick={() => setGuestsOpen((o) => !o)}
@@ -97,7 +100,8 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
                 <span className="block text-xs font-medium text-slate-600">Guests &amp; Rooms</span>
                 <span className="mt-1 block truncate text-[15px] font-medium text-slate-900">{guestLabel}</span>
               </span>
-              <User className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+              <User className="h-5 w-5 shrink-0 text-slate-500 max-lg:order-first" aria-hidden="true" />
+              <ChevronDown className="h-5 w-5 shrink-0 text-slate-500 lg:hidden" aria-hidden="true" />
             </button>
             {guestsOpen ? (
               <div className="absolute left-0 right-0 top-full z-30 mt-2 min-w-[240px] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
@@ -114,15 +118,24 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
             <input type="hidden" name="rooms" value={rooms} />
           </div>
 
-          <button type="submit" className="rounded-xl bg-blue-700 px-10 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800">
+          <button type="submit" className="col-span-2 flex items-center justify-center gap-2.5 rounded-xl bg-blue-700 px-10 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800 lg:col-span-1">
+            <Search className="h-5 w-5 lg:hidden" aria-hidden="true" />
             Search Hotels
           </button>
         </div>
       </form>
+      </div>
 
-      <ul className="mt-5 grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-4">
-        {PROMISES.map((p) => (
-          <li key={p.title} className="flex gap-3">
+      <ul className="mt-4 grid grid-cols-2 divide-slate-100 rounded-2xl border border-slate-100 bg-white px-1 shadow-sm max-lg:divide-y-0 lg:mt-5 lg:grid-cols-4 lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none">
+        {PROMISES.map((p, i) => (
+          <li
+            key={p.title}
+            className={cn(
+              'flex gap-3 max-lg:px-3 max-lg:py-4',
+              i % 2 === 0 && 'max-lg:border-r max-lg:border-slate-100',
+              i < 2 && 'max-lg:border-b max-lg:border-slate-100',
+            )}
+          >
             <p.icon className={`mt-0.5 h-5 w-5 shrink-0 ${p.tint}`} aria-hidden="true" />
             <span>
               <span className="block text-sm font-semibold text-slate-800">{p.title}</span>
@@ -155,15 +168,15 @@ function DateBox({
   const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
 
   return (
-    <label className="relative flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-2.5 focus-within:border-blue-500">
+    <label className="relative flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 sm:gap-3 sm:px-4 focus-within:border-blue-500">
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-medium text-slate-600">{label}</span>
-        <span className="mt-0.5 block text-lg font-medium leading-tight text-slate-900">
+        <span className="mt-0.5 block whitespace-nowrap text-base font-medium leading-tight text-slate-900 sm:text-lg">
           {day}&apos;{year}
         </span>
         <span className="block text-xs text-slate-500">{weekday}</span>
       </span>
-      <CalendarDays className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+      <CalendarDays className="h-5 w-5 shrink-0 text-slate-500 max-lg:order-first" aria-hidden="true" />
       <input
         type="date"
         name={name}

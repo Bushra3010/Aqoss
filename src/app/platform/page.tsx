@@ -162,9 +162,34 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
   while (mixed.length < 16 && queues.some((q) => q.length)) {
     for (const q of queues) if (q.length && mixed.length < 16) mixed.push(q.shift());
   }
+  // For the cards: each offer hotel's lowest published nightly rate and its
+  // approved-review rating — read as stored, the same figures its own website
+  // shows. Discounted prices are never worked out here (the booking engine
+  // prices a stay); the card shows the offer beside the rate.
+  const offerHotelIds = Array.from(new Set(mixed.map((o) => o.hotel_id).filter(Boolean)));
+  const [ratesRes, reviewsRes] = offerHotelIds.length
+    ? await Promise.all([
+        supabase.from('room_types').select('hotel_id, base_price').in('hotel_id', offerHotelIds).eq('is_active', true),
+        supabase.from('reviews').select('hotel_id, rating').in('hotel_id', offerHotelIds).eq('status', 'APPROVED'),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const fromRate = new Map<string, number>();
+  for (const r of (ratesRes.data ?? []) as any[]) {
+    const price = Number(r.base_price);
+    if (!fromRate.has(r.hotel_id) || price < fromRate.get(r.hotel_id)!) fromRate.set(r.hotel_id, price);
+  }
+  const ratings = new Map<string, { sum: number; count: number }>();
+  for (const r of (reviewsRes.data ?? []) as any[]) {
+    const t = ratings.get(r.hotel_id) ?? { sum: 0, count: 0 };
+    t.sum += Number(r.rating);
+    t.count += 1;
+    ratings.set(r.hotel_id, t);
+  }
+
   const offers: PlatformOffer[] = mixed
     .map((o) => {
       const hotel = o.hotel_id ? bySiteHotel.get(o.hotel_id) : undefined;
+      const rating = o.hotel_id ? ratings.get(o.hotel_id) : undefined;
       return {
         id: o.id,
         type: o.offer_type,
@@ -177,6 +202,12 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
         code: codeFor.get(o.id) ?? null,
         href: hotel ? hotelHref(hotel.slug) : '#hotels',
         image: hotel?.cover ?? '/platform/hero.jpg',
+        hotel: hotel?.name ?? null,
+        // "Goa", not "Goa, Goa" when the city and state share a name.
+        place: hotel ? Array.from(new Set([hotel.city, hotel.state].filter(Boolean))).join(', ') || null : null,
+        rating: rating ? Math.round((rating.sum / rating.count) * 10) / 10 : null,
+        reviews: rating?.count ?? 0,
+        fromRate: o.hotel_id && fromRate.has(o.hotel_id) ? formatCurrency(fromRate.get(o.hotel_id)!) : null,
       };
     });
 
@@ -189,13 +220,13 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
   return (
     <>
         {/* ---- Hero ------------------------------------------------------ */}
-        <section className="relative isolate overflow-hidden bg-[#0B1F3A]">
+        <section className="relative isolate overflow-hidden bg-[#0B1F3A] max-sm:-mt-[72px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/platform/hero.jpg" alt="" className="absolute inset-0 -z-10 h-full w-full object-cover object-[center_40%]" />
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#081A33]/80 via-[#081A33]/40 to-transparent" aria-hidden="true" />
           <div className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-[#081A33]/50 to-transparent" aria-hidden="true" />
 
-          <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pt-12">
+          <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 max-sm:pt-[104px] sm:px-6 sm:pt-12">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h1 className="max-w-[680px] text-4xl font-bold leading-[1.15] tracking-tight text-white drop-shadow sm:text-[44px]">
@@ -210,13 +241,13 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
                   ))}
                 </p>
               </div>
-              <ul className="flex flex-wrap gap-3 lg:max-w-[460px] lg:justify-end xl:max-w-[520px]">
+              <ul className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3 lg:max-w-[460px] lg:justify-end xl:max-w-[520px]">
                 {badges.map((b) => (
-                  <li key={b.title} className="flex items-center gap-3 rounded-xl border border-white/25 bg-white/15 px-4 py-2.5 text-white backdrop-blur-md">
+                  <li key={b.title} className="flex flex-col items-start gap-1.5 rounded-xl border border-white/25 bg-white/15 px-2.5 py-2.5 text-white backdrop-blur-md sm:flex-row sm:items-center sm:gap-3 sm:px-4">
                     <b.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                    <span>
-                      <span className="block text-sm font-semibold leading-tight">{b.title}</span>
-                      <span className="block text-xs text-white/75">{b.text}</span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold leading-tight sm:text-sm">{b.title}</span>
+                      <span className="mt-0.5 block text-[11px] leading-tight text-white/75 sm:mt-0 sm:text-xs">{b.text}</span>
                     </span>
                   </li>
                 ))}
@@ -231,24 +262,28 @@ export default async function PlatformHome({ searchParams }: { searchParams: Rec
 
         {/* ---- Quick links ---------------------------------------------- */}
         <div className="relative z-10 mx-auto -mt-10 max-w-6xl px-4 sm:px-6">
-          <ul className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg shadow-slate-900/5 md:grid-cols-5 md:divide-x md:divide-slate-100 md:gap-0">
-            {QUICK_LINKS.map((q) => (
-              <li key={q.title}>
-                <a href={q.href} className="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-slate-50">
-                  <q.icon className={`h-7 w-7 shrink-0 ${q.tint}`} aria-hidden="true" />
+          {/* Phones: five upright tiles across. md up: one bar of five. */}
+          <ul className="grid grid-cols-5 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg shadow-slate-900/5 md:gap-0 md:divide-x md:divide-slate-100 md:p-3">
+            {QUICK_LINKS.map((q, i) => (
+              <li key={q.title} className="min-w-0">
+                <a
+                  href={q.href}
+                  className={`flex h-full flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-center hover:bg-slate-50 md:flex-row md:gap-3 md:px-4 md:py-3 md:text-left ${i === 0 ? 'max-md:bg-blue-50/70' : ''}`}
+                >
+                  <q.icon className={`h-6 w-6 shrink-0 md:h-7 md:w-7 ${q.tint}`} aria-hidden="true" />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-slate-900">{q.title}</span>
-                    <span className="block truncate text-xs text-slate-500">{q.text}</span>
+                    <span className="block text-[11px] font-semibold leading-tight text-slate-900 md:truncate md:text-sm">{q.title}</span>
+                    <span className="mt-0.5 block text-[10px] leading-tight text-slate-500 md:mt-0 md:truncate md:text-xs">{q.text}</span>
                   </span>
                 </a>
               </li>
             ))}
-            <li className="col-span-2 md:col-span-1 md:pl-3">
-              <a href="#book-demo" className="flex h-full items-center gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 hover:bg-blue-50">
-                <MonitorPlay className="h-7 w-7 shrink-0 text-blue-700" aria-hidden="true" />
+            <li className="min-w-0 md:pl-3">
+              <a href="#book-demo" className="flex h-full flex-col items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/60 px-1 py-2.5 text-center hover:bg-blue-50 md:flex-row md:gap-3 md:px-4 md:py-3 md:text-left">
+                <MonitorPlay className="h-6 w-6 shrink-0 text-blue-700 md:h-7 md:w-7" aria-hidden="true" />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-blue-800">Book a Demo</span>
-                  <span className="block text-xs text-slate-500">See AQOSS in Action</span>
+                  <span className="block text-[11px] font-semibold leading-tight text-blue-800 md:text-sm">Book a Demo</span>
+                  <span className="mt-0.5 block text-[10px] leading-tight text-slate-500 md:mt-0 md:text-xs">See AQOSS in Action</span>
                 </span>
               </a>
             </li>
