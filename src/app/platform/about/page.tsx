@@ -160,7 +160,7 @@ export default async function AboutPage() {
             <p className="relative mx-auto mt-3 max-w-xl text-white/70">
               A short demo of the website, booking engine and admin panel — set up around your rooms and your guests.
             </p>
-            <Link href="/#book-demo" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 text-sm font-semibold hover:bg-green-700">
+            <Link href="/#book-demo" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold hover:bg-blue-800">
               Book a Demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>

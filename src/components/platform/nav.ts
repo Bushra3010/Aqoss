@@ -21,6 +21,10 @@ export const NAV = [
   { href: '/reputation', label: 'Reputation' },
 ];
 
+/** Solutions shown in the header; the footer lists all of `NAV`. */
+const HIDDEN_FROM_HEADER = ['/booking-engine', '/reputation'];
+export const HEADER_NAV = NAV.filter((item) => !HIDDEN_FROM_HEADER.includes(item.href));
+
 /** The header's "Resources" menu — sections of the home page. */
 export const RESOURCES = [
   { href: '/#offers', label: 'Offers & deals', text: 'Current offers from AQOSS hotels' },

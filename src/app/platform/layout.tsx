@@ -35,7 +35,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               Assured Quality of Soft Solutions — AI-powered software that runs a hotel&apos;s website, marketing, sales,
               bookings and reviews from one place.
             </p>
-            <Link href="/#book-demo" className="mt-6 inline-flex rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold hover:bg-green-700">
+            <Link href="/#book-demo" className="mt-6 inline-flex rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold hover:bg-blue-800">
               Book a Demo
             </Link>
           </div>

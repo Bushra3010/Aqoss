@@ -8,7 +8,7 @@ import { BedDouble, Building2, CheckCircle2, ChevronDown, Lock, Mail, MapPin, Me
 import { submitDemoRequest, type DemoFormState } from '@/app/platform/actions';
 import { AqossMark } from '@/components/platform/Art';
 import { cn } from '@/lib/utils';
-import { ABOUT, NAV, RESOURCES } from '@/components/platform/nav';
+import { ABOUT, HEADER_NAV, RESOURCES } from '@/components/platform/nav';
 
 export function PlatformHeader() {
   const pathname = usePathname();
@@ -29,7 +29,7 @@ export function PlatformHeader() {
     };
   }, []);
 
-  const link = 'whitespace-nowrap text-[15px] font-medium text-slate-700 hover:text-[#003358]';
+  const link = 'whitespace-nowrap text-[15px] font-medium text-slate-700 hover:text-blue-700';
 
   return (
     // On phones the bar floats as a rounded card over the page (the home hero
@@ -42,7 +42,7 @@ export function PlatformHeader() {
         </Link>
 
         <nav aria-label="Main" className="ml-auto hidden items-center gap-7 xl:flex">
-          {NAV.map((item) => (
+          {HEADER_NAV.map((item) => (
             <Link key={item.href} href={item.href} className={cn(link, pathname === item.href && 'text-blue-700')} aria-current={pathname === item.href ? 'page' : undefined}>
               {item.label}
             </Link>
@@ -83,12 +83,12 @@ export function PlatformHeader() {
           <Link href="/admin/login" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-[#0F172A] hover:bg-slate-100 sm:inline-flex">
             Hotel Sign In
           </Link>
-          <a href="/#book-demo" className="whitespace-nowrap rounded-lg bg-[#0B2545] px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-[#003358]">
+          <a href="/#book-demo" className="whitespace-nowrap rounded-lg bg-blue-700 px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-blue-800">
             Book a Demo
           </a>
           <button
             type="button"
-            className="rounded-lg p-2 text-[#003358] hover:bg-[#003358]/5 xl:hidden"
+            className="rounded-lg p-2 text-blue-700 hover:bg-blue-50 xl:hidden"
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
@@ -100,12 +100,12 @@ export function PlatformHeader() {
 
       {open ? (
         <nav aria-label="Main" className="max-h-[calc(100vh-68px)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-3 max-sm:mt-2 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-lg xl:hidden">
-          {[...NAV, ...RESOURCES, ABOUT].map((item) => (
+          {[...HEADER_NAV, ...RESOURCES, ABOUT].map((item) => (
             <a key={item.href + item.label} href={item.href} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
               {item.label}
             </a>
           ))}
-          <Link href="/admin/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-[#003358] hover:bg-slate-50">
+          <Link href="/admin/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-blue-700 hover:bg-slate-50">
             Hotel Sign In
           </Link>
         </nav>
@@ -255,7 +255,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green-600/20 hover:bg-green-700 disabled:opacity-60"
+      className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800 disabled:opacity-60"
     >
       <Send className="h-4 w-4" aria-hidden="true" />
       {pending ? 'Sending…' : 'Book my demo'}

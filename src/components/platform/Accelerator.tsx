@@ -1,5 +1,7 @@
+import type { CSSProperties } from 'react';
 import { ArrowRight, BarChart3, CalendarDays, Megaphone, Settings, UserRound, Zap } from 'lucide-react';
 import { AqossMark } from '@/components/platform/Art';
+import { Reveal } from '@/components/platform/Reveal';
 import { cn } from '@/lib/utils';
 
 const ITEMS = [
@@ -72,23 +74,23 @@ export function Accelerator() {
       <div className="absolute -right-48 top-24 -z-10 h-[820px] w-[1100px] rounded-full bg-[#EAF1FD]/70 blur-sm" aria-hidden="true" />
 
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:py-24">
-        <div>
-          <p className="inline-flex items-center gap-2 rounded-full bg-blue-100/70 px-4 py-2 text-sm font-medium text-blue-700">
+        <Reveal>
+          <p data-reveal style={{ '--i': 0 } as CSSProperties} className="inline-flex items-center gap-2 rounded-full bg-blue-100/70 px-4 py-2 text-sm font-medium text-blue-700">
             <Zap className="h-4 w-4 fill-blue-600 text-blue-600" aria-hidden="true" />
             AI-Powered Hotel Solutions
           </p>
-          <h2 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#0B1B3F] sm:text-6xl">
+          <h2 data-reveal style={{ '--i': 1 } as CSSProperties} className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#0B1B3F] sm:text-6xl">
             Hotel Productivity
             <span className="block bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text pb-1 text-transparent">Accelerator</span>
           </h2>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
+          <p data-reveal style={{ '--i': 2 } as CSSProperties} className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
             AQOSS hotel solutions accelerate your hotel&apos;s productivity with smart automation, seamless management, and
             powerful tools — all in one platform.
           </p>
 
           <ul className="mt-8 max-w-[630px] space-y-3">
-            {ITEMS.map((s) => (
-              <li key={s.id}>
+            {ITEMS.map((s, i) => (
+              <li key={s.id} data-reveal style={{ '--i': 3 + i } as CSSProperties}>
                 <a
                   href={s.href}
                   className="group flex items-center gap-4 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm shadow-slate-900/[0.03] transition hover:border-blue-100 hover:shadow-md"
@@ -108,15 +110,15 @@ export function Accelerator() {
             ))}
           </ul>
 
-          <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
-            <a href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-[#0B2545] px-14 py-4 text-[15px] font-semibold text-white shadow-lg shadow-[#0B2545]/20 hover:bg-[#003358]">
+          <div data-reveal style={{ '--i': 3 + ITEMS.length } as CSSProperties} className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
+            <a href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-blue-700 px-14 py-4 text-[15px] font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800">
               Book a Demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
             <a href="#website" className="group inline-flex items-center gap-2 text-[15px] font-semibold text-blue-700">
               Explore All Features <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden="true" />
             </a>
           </div>
-        </div>
+        </Reveal>
 
         <Orbit />
       </div>
@@ -131,27 +133,59 @@ export function Accelerator() {
 function Orbit({ className = 'max-w-[720px]' }: { className?: string }) {
   return (
     <div
-      className={cn('relative mx-auto aspect-square w-full', className)}
+      className={cn('orbit relative mx-auto aspect-square w-full', className)}
       style={{ containerType: 'inline-size' }}
       role="img"
       aria-label="AQOSS at the centre of its five hotel solutions"
     >
-      {/* Soft halo and the dashed ring */}
+      {/* Soft halo */}
       <div className="absolute left-1/2 top-1/2 h-[50%] w-[50%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-100/50 shadow-[0_0_80px_30px_rgba(191,219,254,.35)]" />
-      <div
-        className="absolute rounded-full border-2 border-dashed border-sky-400/70"
-        style={{ inset: `${50 - RING}%` }}
-      />
-      {DOTS.map((deg) => {
-        const rad = (deg * Math.PI) / 180;
-        return (
-          <span
-            key={deg}
-            className="absolute h-[1.8%] w-[1.8%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500 ring-4 ring-sky-100"
-            style={{ left: `${50 + RING * Math.cos(rad)}%`, top: `${50 + RING * Math.sin(rad)}%` }}
-          />
-        );
-      })}
+
+      {/* The dashed ring, its dots and the five solutions turn clockwise round the centre */}
+      <div className="orbit-spin absolute inset-0">
+        <div
+          className="absolute rounded-full border-2 border-dashed border-sky-400/70"
+          style={{ inset: `${50 - RING}%` }}
+        />
+        {DOTS.map((deg) => {
+          const rad = (deg * Math.PI) / 180;
+          return (
+            <span
+              key={deg}
+              className="absolute h-[1.8%] w-[1.8%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500 ring-4 ring-sky-100"
+              style={{ left: `${50 + RING * Math.cos(rad)}%`, top: `${50 + RING * Math.sin(rad)}%` }}
+            />
+          );
+        })}
+
+        {/* The five solutions; each counter-turns so its label stays upright */}
+        {ITEMS.map((s) => (
+          <a
+            key={s.id}
+            href={s.href}
+            className="absolute w-[23%] -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${s.at.x}%`, top: `${s.at.y}%` }}
+            tabIndex={-1}
+          >
+            <span className="orbit-counter block">
+              <span
+                className="block rounded-[18%] border border-white bg-white/95 p-[9%] shadow-xl shadow-blue-900/10"
+                style={{ transform: `rotate(${s.at.r}deg)` }}
+              >
+                <span className={`flex aspect-[1.2] items-center justify-center rounded-[20%] bg-gradient-to-br ${s.tile} text-white shadow-lg`}>
+                  <s.icon className="h-[42%] w-[42%]" strokeWidth={2.25} aria-hidden="true" />
+                </span>
+                <span
+                  className={`mt-[10%] block text-center font-semibold leading-tight text-[#1E3A8A] ${s.id === 'reputation' ? '' : 'whitespace-nowrap'}`}
+                  style={{ fontSize: 'clamp(8px, 2.2cqw, 16px)' }}
+                >
+                  {s.short}
+                </span>
+              </span>
+            </span>
+          </a>
+        ))}
+      </div>
 
       {/* Centre: the AQOSS mark */}
       <div className="absolute left-1/2 top-1/2 flex aspect-square w-[32%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-[6%] rounded-[22%] border border-white bg-white shadow-2xl shadow-blue-900/15">
@@ -160,32 +194,6 @@ function Orbit({ className = 'max-w-[720px]' }: { className?: string }) {
           AQOSS
         </span>
       </div>
-
-      {/* The five solutions */}
-      {ITEMS.map((s) => (
-        <a
-          key={s.id}
-          href={s.href}
-          className="absolute w-[23%] -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${s.at.x}%`, top: `${s.at.y}%` }}
-          tabIndex={-1}
-        >
-          <span
-            className="block rounded-[18%] border border-white bg-white/95 p-[9%] shadow-xl shadow-blue-900/10 transition hover:-translate-y-1"
-            style={{ transform: `rotate(${s.at.r}deg)` }}
-          >
-            <span className={`flex aspect-[1.2] items-center justify-center rounded-[20%] bg-gradient-to-br ${s.tile} text-white shadow-lg`}>
-              <s.icon className="h-[42%] w-[42%]" strokeWidth={2.25} aria-hidden="true" />
-            </span>
-            <span
-              className={`mt-[10%] block text-center font-semibold leading-tight text-[#1E3A8A] ${s.id === 'reputation' ? '' : 'whitespace-nowrap'}`}
-              style={{ fontSize: 'clamp(8px, 2.2cqw, 16px)' }}
-            >
-              {s.short}
-            </span>
-          </span>
-        </a>
-      ))}
     </div>
   );
 }

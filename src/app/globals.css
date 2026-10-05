@@ -123,6 +123,49 @@ body {
   }
 }
 
+/*
+ * The AQOSS home page's solutions orbit turns clockwise; each card turns back
+ * the other way at the same speed so its label stays upright. Hovering the
+ * art pauses both together.
+ */
+@keyframes orbit-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes orbit-counter {
+  to { transform: rotate(-360deg); }
+}
+.orbit-spin,
+.orbit-counter {
+  animation: orbit-spin 40s linear infinite;
+}
+.orbit-counter {
+  animation-name: orbit-counter;
+}
+.orbit:hover .orbit-spin,
+.orbit:hover .orbit-counter {
+  animation-play-state: paused;
+}
+
+/*
+ * Scroll-in entrance (`Reveal`): each `[data-reveal]` child fades up in turn,
+ * `--i` steps apart. Only hidden when scripting is on, so the content never
+ * waits on JavaScript that will not run.
+ */
+@media (scripting: enabled) {
+  .reveal [data-reveal] {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+  .reveal[data-shown] [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Respect a reduced-motion preference for the sticky/animated bits. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -131,6 +174,12 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* An infinite loop at 0.01ms would flicker; hold the orbit still instead. */
+  .orbit-spin,
+  .orbit-counter {
+    animation: none !important;
   }
 }
 

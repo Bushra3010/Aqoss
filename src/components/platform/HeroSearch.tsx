@@ -108,7 +108,7 @@ export function HeroSearch({ initial }: { initial: HeroSearchValues }) {
                 <Stepper label="Adults" value={adults} min={1} max={12} onChange={setAdults} />
                 <Stepper label="Children" value={children} min={0} max={8} onChange={setChildren} />
                 <Stepper label="Rooms" value={rooms} min={1} max={6} onChange={setRooms} />
-                <button type="button" onClick={() => setGuestsOpen(false)} className="mt-3 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
+                <button type="button" onClick={() => setGuestsOpen(false)} className="mt-3 w-full rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800">
                   Done
                 </button>
               </div>

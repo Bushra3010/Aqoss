@@ -52,7 +52,7 @@ export default function SolutionDetailPage({ params }: { params: { solution: str
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">{page.intro}</p>
             <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
-              <Link href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-[#0B2545] px-8 py-4 text-[15px] font-semibold text-white shadow-lg shadow-[#0B2545]/20 hover:bg-[#003358]">
+              <Link href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-blue-700 px-8 py-4 text-[15px] font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800">
                 Book a Demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a href="#features" className="group inline-flex items-center gap-2 text-[15px] font-semibold text-blue-700">
@@ -127,7 +127,7 @@ export default function SolutionDetailPage({ params }: { params: { solution: str
             <p className="relative mt-3 max-w-md leading-relaxed text-white/70">
               Book a short demo and we&apos;ll walk you through it with your own rooms, prices and photos in mind.
             </p>
-            <Link href="/#book-demo" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 text-sm font-semibold hover:bg-green-700">
+            <Link href="/#book-demo" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold hover:bg-blue-800">
               Book a Demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
