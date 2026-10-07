@@ -11,7 +11,7 @@ export type SolutionSlug = (typeof SOLUTION_SLUGS)[number];
  * Main-domain paths middleware rewrites to `/platform/<path>`. Hotel
  * subdomains never see them: there they are an ordinary 404.
  */
-export const PLATFORM_PAGES: readonly string[] = [...SOLUTION_SLUGS, 'about'];
+export const PLATFORM_PAGES: readonly string[] = [...SOLUTION_SLUGS, 'about', 'blog', 'training'];
 
 export const NAV = [
   { href: '/ai-website', label: 'AI Website' },
@@ -25,8 +25,10 @@ export const NAV = [
 const HIDDEN_FROM_HEADER = ['/booking-engine', '/reputation'];
 export const HEADER_NAV = NAV.filter((item) => !HIDDEN_FROM_HEADER.includes(item.href));
 
-/** The header's "Resources" menu — sections of the home page. */
+/** The header's "Resources" menu — learning material, then sections of the home page. */
 export const RESOURCES = [
+  { href: '/blog', label: 'Blog', text: 'Guides and ideas for running a hotel — coming soon' },
+  { href: '/training', label: 'Training videos', text: 'Short videos on using AQOSS — coming soon' },
   { href: '/#offers', label: 'Offers & deals', text: 'Current offers from AQOSS hotels' },
   { href: '/#hotels', label: 'Hotels on AQOSS', text: 'Browse the websites we run' },
   { href: '/#why-aqoss', label: 'Why AQOSS', text: 'What hotels get from the platform' },

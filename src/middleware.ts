@@ -134,7 +134,10 @@ export async function middleware(request: NextRequest) {
   const isCustomerArea = pathname.startsWith('/dashboard');
   const loginPath = isAdminArea ? '/admin/login' : '/login';
 
-  if ((isAdminArea || isCustomerArea) && !signedIn && pathname !== loginPath) {
+  // Hotel registration is public: it only submits a request (migration 16).
+  const isPublic = pathname === loginPath || pathname === '/admin/register';
+
+  if ((isAdminArea || isCustomerArea) && !signedIn && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = loginPath;
     loginUrl.search = `?redirect=${encodeURIComponent(pathname)}`;

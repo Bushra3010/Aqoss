@@ -48,8 +48,15 @@ export default async function AdminLoginPage({
 
         </div>
 
+        <p className="mt-4 text-center text-sm text-slate-400">
+          New to AQOSS?{' '}
+          <Link href="/admin/register" className="font-semibold text-white hover:underline">
+            Register your hotel
+          </Link>
+        </p>
+
         {session ? (
-          <p className="mt-4 text-center text-sm text-slate-400">
+          <p className="mt-2 text-center text-sm text-slate-400">
             Already signed in as {session.fullName ?? session.email}.{' '}
             <Link href="/admin" className="font-semibold text-white hover:underline">
               Go to dashboard

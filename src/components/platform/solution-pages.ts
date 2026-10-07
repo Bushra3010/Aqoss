@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   BarChart3,
   BedDouble,
+  Bot,
   Bell,
   CalendarCheck,
   CalendarClock,
@@ -9,21 +10,26 @@ import {
   ClipboardList,
   CreditCard,
   Globe,
+  Headphones,
   Hotel,
   Images,
+  Lightbulb,
   LayoutTemplate,
   Link2,
   MapPin,
   Megaphone,
   MessageSquareReply,
+  MousePointerClick,
   Palette,
   PhoneCall,
   Receipt,
   RotateCcw,
   Search,
+  Share2,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
+  Sparkles,
   Star,
   Tag,
   Ticket,
@@ -50,7 +56,8 @@ export type SolutionPage = {
   intro: string;
   /** Short labels floating around the hero art. */
   chips: [string, string, string];
-  features: { icon: LucideIcon; title: string; text: string }[];
+  /** `soon` marks a feature that is announced but not built yet; the page tags it "Coming soon". */
+  features: { icon: LucideIcon; title: string; text: string; soon?: boolean }[];
   steps: { title: string; text: string }[];
   /** "Inside the panel": what the hotel's team does day to day. */
   panel: { title: string; points: string[] };
@@ -59,7 +66,9 @@ export type SolutionPage = {
 
 /*
  * Every line here describes something the platform really does today — this
- * is a sales page, and a hotel will hold us to it.
+ * is a sales page, and a hotel will hold us to it. Announced features that are
+ * not built yet carry `soon: true` and show a "Coming soon" tag; drop the flag
+ * only once the feature ships.
  */
 export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
   'ai-website': {
@@ -72,12 +81,15 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
     soft: 'bg-blue-50 text-blue-600',
     headline: ['A hotel website that', 'sells your rooms'],
     intro:
-      'Every property gets a fast, mobile-ready website on its own AQOSS address — rooms, photos, location, house rules and reviews, kept up to date from one panel without a developer.',
+      'A hotel website with a high-performance booking engine built in, so it sells your rooms like an OTA. Every property gets its own website and address — rooms, photos, location, house rules and reviews, kept up to date from the admin panel without a developer.',
     chips: ['Live rooms & rates', 'Own subdomain', 'Mobile-first'],
     features: [
+      { icon: BedDouble, title: 'Sells rooms like an OTA', text: 'The booking engine is built into the website, so guests search, pick a room and pay without ever leaving it.' },
       { icon: Link2, title: 'Your own address', text: 'Every hotel is live at its own subdomain, e.g. your-hotel.aqoss.com — or connect your own domain.' },
       { icon: LayoutTemplate, title: 'One-page design', text: 'Overview, rooms, location, rules and reviews on one page, with tabs that follow the reader as they scroll.' },
-      { icon: BedDouble, title: 'Live rooms & rates', text: 'Room cards read straight from the booking engine, so prices and availability are never out of date.' },
+      { icon: SlidersHorizontal, title: 'Full control, no developer', text: 'Manage your rates, inventory and promotions directly from the admin panel — changes show on the site instantly.' },
+      { icon: CalendarCheck, title: 'Live rooms & rates', text: 'Room cards read straight from the booking engine, so prices and availability are never out of date.' },
+      { icon: Smartphone, title: 'Manage it from the app', text: 'Update rates, inventory and promotions on the go from the AQOSS mobile app.', soon: true },
       { icon: Images, title: 'Photo galleries', text: 'Upload photos for the hotel and each room type; the first photo becomes the cover everywhere.' },
       { icon: MapPin, title: 'Location & nearby', text: 'Address, map and the places nearby that guests ask about, with distance and travel time.' },
       { icon: Palette, title: 'Your colours', text: 'Each website carries its own brand colour, set from the admin panel — no code changes.' },
@@ -104,9 +116,12 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
     soft: 'bg-violet-50 text-violet-600',
     headline: ['Fill quiet nights with', 'offers guests act on'],
     intro:
-      'Run seasonal, early-bird and last-minute offers, hand out coupon codes that are checked at checkout, and keep guests informed with automatic messages — all from the same place you run your hotel.',
+      'Bring your business to the top of Google, promote it across every platform on a budget you set, and plan your branding and campaigns with AI advice. Today you already run offers and coupon codes checked at checkout, with automatic guest messages.',
     chips: ['Coupon codes', 'Seasonal offers', 'Guest messages'],
     features: [
+      { icon: Search, title: 'AI-powered SEO', text: 'AI-empowered SEO that brings your business to the top of Google search and other platforms.', soon: true },
+      { icon: Wallet, title: 'Promote on your budget', text: 'Plan and set your own budget, and promote your business across all platforms from one place.', soon: true },
+      { icon: Lightbulb, title: 'AI marketing advice', text: 'Get advice from AI on planning and executing your branding, marketing and campaigns.', soon: true },
       { icon: Tag, title: 'Offers that show', text: 'Percentage, flat, seasonal, early-bird and last-minute offers appear on your website and on the AQOSS home page.' },
       { icon: Ticket, title: 'Coupon codes', text: 'Create codes with a discount, a minimum booking value, validity dates and a cap on total and per-guest use.' },
       { icon: SlidersHorizontal, title: 'Aim them precisely', text: 'Limit a coupon to certain hotels or room types — or let it apply everywhere.' },
@@ -136,15 +151,18 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
     soft: 'bg-pink-50 text-pink-600',
     headline: ['Never lose a guest', 'who almost booked'],
     intro:
-      'Every abandoned booking becomes a lead your team can follow up. Take phone and walk-in bookings at the desk, record payments, and see how the business is doing at a glance.',
+      'Every abandoned booking becomes a lead you can follow up and convert. AI agents that call guests in your preferred language are on the way, and an organised data bank lets you analyse and measure performance in real time.',
     chips: ['Abandoned-booking leads', 'Desk bookings', 'Revenue reports'],
     features: [
       { icon: Users, title: 'Leads from abandoned bookings', text: 'A guest who started a booking but never paid shows up as a lead with their dates, room and contact details.' },
+      { icon: Bot, title: 'AI follow-up', text: 'An AI sales tool follows up every abandoned booking to convert it.', soon: true },
+      { icon: Headphones, title: 'AI voice agents', text: 'AI voice callers speak to guests in your preferred language and bring leads to closure.', soon: true },
       { icon: ClipboardList, title: 'Follow-up tracking', text: 'Mark each lead contacted or lost and keep notes — converted is set automatically once they pay.' },
       { icon: PhoneCall, title: 'Phone & walk-in bookings', text: 'Staff book through the same engine as the website, so availability and price are always right.' },
       { icon: CalendarRange, title: 'Change a booking', text: 'Move dates, change rooms or party size; the new price is shown live before you save.' },
       { icon: Wallet, title: 'Desk payments', text: 'Record cash, UPI or card taken at the desk and see exactly what each booking still owes.' },
-      { icon: BarChart3, title: 'Reports that matter', text: 'Bookings, revenue and occupancy over any period, with the change from the period before.' },
+      { icon: Users, title: 'Guest records', text: 'Every guest’s contact details, bookings and payments together in one CRM record.' },
+      { icon: BarChart3, title: 'An organised data bank', text: 'Bookings, revenue, occupancy and leads in one place, to analyse and measure performance in real time.' },
     ],
     steps: [
       { title: 'A guest drops off', text: 'Their unpaid booking is held briefly, then appears in Leads.' },
@@ -168,9 +186,12 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
     soft: 'bg-emerald-50 text-emerald-600',
     headline: ['Commission-free bookings', 'that never double-sell'],
     intro:
-      'Guests see live availability and nightly prices, pay securely online and get an instant confirmation. Every booking — online, by phone or at the desk — goes through the same engine.',
+      'Your guest is ready to book on your website — let them finish right there. From selecting the room to payment, the booking takes three easy clicks, and your own booking link wins direct bookings that save the commission you pay third-party sites.',
     chips: ['Live availability', 'Secure payments', 'Instant confirmation'],
     features: [
+      { icon: MousePointerClick, title: 'Book in three clicks', text: 'Guests complete the booking — from selecting the room to payment — in three easy clicks.' },
+      { icon: Share2, title: 'A link to promote', text: 'Share your booking link in ads, social media and messages to get direct bookings and save the money third-party sites charge.' },
+      { icon: Sparkles, title: 'AI dynamic pricing', text: 'Let AI set your prices dynamically and stay ahead in the revenue-management game.', soon: true },
       { icon: CalendarClock, title: 'Live availability', text: 'Inventory is counted per night in the database, which refuses any booking that would oversell a room.' },
       { icon: Receipt, title: 'Nightly pricing', text: 'Set a base price per room type and override it for any date — weekends, festivals, peak season.' },
       { icon: CreditCard, title: 'Secure online payment', text: 'Guests pay through a secure payment gateway; the booking is confirmed the moment payment succeeds.' },

@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight, CalendarCheck, Globe, Megaphone, Star, TrendingUp, Zap } from 'lucide-react';
+import { SoonTag } from '@/components/platform/SoonTag';
 
 /**
  * Only what the platform really does goes in these lists — this page sells it.
- * Each card's id is the anchor the header menu and the Accelerator link to.
+ * An announced feature that is not built yet is `{ text, soon: true }` and
+ * shows a "Coming soon" tag. Each card's id is the anchor the header menu and
+ * the Accelerator link to.
  */
+type Point = string | { text: string; soon: true };
+
 const SOLUTIONS = [
   {
     id: 'website',
@@ -13,8 +18,12 @@ const SOLUTIONS = [
     title: 'AI-empowered website',
     banner: 'from-sky-400 to-blue-600',
     dot: 'bg-blue-600',
-    text: 'A fast, mobile-ready website for every property on its own subdomain — create, publish and update it in minutes, not days.',
-    points: ['Your own subdomain, or your own domain', 'SEO-friendly, mobile-first design', 'Built to be found on search'],
+    text: 'A hotel website with a high-performance booking engine built in, that sells your rooms like an OTA.',
+    points: [
+      'Rooms, photos, location, house rules and reviews on your own address',
+      'Kept up to date from the admin panel — no developer',
+      'Full control of your rates, inventory and promotions',
+    ] as Point[],
   },
   {
     id: 'marketing',
@@ -23,8 +32,13 @@ const SOLUTIONS = [
     title: 'AI-empowered marketing',
     banner: 'from-violet-400 to-purple-700',
     dot: 'bg-purple-600',
-    text: 'Bring guests back and fill your rooms with smart, timely offers. Reach the right guests at the right time.',
-    points: ['Seasonal, early-bird and last-minute offers', 'Coupon codes checked at checkout', 'Automatic confirmation and reminder messages'],
+    text: 'Get found at the top of search, promote your hotel on a budget you set, and plan campaigns with AI advice.',
+    points: [
+      { text: 'AI-empowered SEO for Google and other platforms', soon: true },
+      { text: 'Promote across all platforms on your own budget', soon: true },
+      { text: 'AI advice for branding, marketing and campaigns', soon: true },
+      'Offers and coupon codes checked at checkout',
+    ] as Point[],
   },
   {
     id: 'sales',
@@ -33,8 +47,12 @@ const SOLUTIONS = [
     title: 'AI-empowered sales',
     banner: 'from-sky-400 to-blue-600',
     dot: 'bg-blue-600',
-    text: 'Never lose a guest who almost booked. Smart follow-ups and a unified sales dashboard help you turn interest into revenue.',
-    points: ['Abandoned bookings become leads', 'Phone and walk-in bookings at the desk', 'Real-time booking insights'],
+    text: 'Every abandoned booking becomes a lead — follow it up and turn it into a booking.',
+    points: [
+      'Abandoned bookings become leads automatically',
+      { text: 'AI voice agents that call in your preferred language', soon: true },
+      'An organised data bank to measure performance in real time',
+    ] as Point[],
   },
   {
     id: 'booking',
@@ -43,8 +61,12 @@ const SOLUTIONS = [
     title: 'AI-empowered booking engine',
     banner: 'from-fuchsia-400 to-purple-600',
     dot: 'bg-purple-600',
-    text: 'Give guests a seamless, fast and secure booking experience — with real-time availability, secure payments and more.',
-    points: ['Real-time room availability', 'Secure online payments and refunds', 'Mobile-optimized booking flow'],
+    text: 'Your guest is ready to book — let them complete it on your website, from selecting the room to payment, in three easy clicks.',
+    points: [
+      'A booking link to promote — get direct bookings, skip OTA commission',
+      'Live availability and secure online payments',
+      { text: 'AI dynamic pricing for revenue management', soon: true },
+    ] as Point[],
   },
   {
     id: 'reputation',
@@ -54,7 +76,7 @@ const SOLUTIONS = [
     banner: 'from-orange-300 to-rose-400',
     dot: 'bg-orange-500',
     text: 'Build trust and get more 5-star reviews. Collect reviews from guests who really stayed and reply to them publicly.',
-    points: ['Verified reviews from completed stays', 'Approve, hide and reply to reviews', 'Ratings shown on your website'],
+    points: ['Verified reviews from completed stays', 'Approve, hide and reply to reviews', 'Ratings shown on your website'] as Point[],
   },
 ] as const;
 
@@ -93,12 +115,18 @@ export function Solutions() {
                   <h3 className="mt-5 text-[17px] font-bold text-[#0B1B3F]">{s.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-500">{s.text}</p>
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-                    {s.points.map((p) => (
-                      <li key={p} className="flex gap-2.5">
-                        <span className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${s.dot}`} aria-hidden="true" />
-                        {p}
-                      </li>
-                    ))}
+                    {s.points.map((p) => {
+                      const text = typeof p === 'string' ? p : p.text;
+                      return (
+                        <li key={text} className="flex gap-2.5">
+                          <span className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${s.dot}`} aria-hidden="true" />
+                          <span>
+                            {text}
+                            {typeof p === 'string' ? null : <SoonTag className="ml-2 align-[1px]" />}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                   <Link href={s.href} className="group mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700">
                     Learn more <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden="true" />

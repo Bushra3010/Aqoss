@@ -33,6 +33,7 @@ export function StatusBadge({ status }: { status: string }) {
     FAILED: 'red',
     PARTIALLY_REFUNDED: 'amber',
     APPROVED: 'green',
+    REJECTED: 'red',
     HIDDEN: 'slate',
     ACTIVE: 'green',
     DRAFT: 'slate',

@@ -172,7 +172,7 @@ export function buildDataset(options: DatasetOptions): Tables {
     payments: [], refunds: [], invoices: [],
     transport_services: [], transport_routes: [], transport_slots: [], transport_bookings: [],
     offers: [], coupons: [], coupon_redemptions: [],
-    reviews: [], review_images: [], booking_leads: [], demo_requests: [],
+    reviews: [], review_images: [], booking_leads: [], demo_requests: [], hotel_registrations: [],
     notification_templates: [], notifications: [], notification_logs: [], otp_codes: [],
     audit_logs: [], platform_settings: [],
   };
@@ -213,6 +213,7 @@ function seedRbac(t: Tables) {
     ['audit.read', 'audit', 'read'], ['settings.write', 'settings', 'write'],
     ['leads.read', 'leads', 'read'], ['leads.write', 'leads', 'write'],
     ['demo_requests.read', 'demo_requests', 'read'], ['demo_requests.write', 'demo_requests', 'write'],
+    ['hotel_registrations.read', 'hotel_registrations', 'read'], ['hotel_registrations.write', 'hotel_registrations', 'write'],
   ];
 
   for (const [key, module, action] of permissionKeys) {

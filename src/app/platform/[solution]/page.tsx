@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowRight, Check, ChevronRight } from 'lucide-react';
 import { SOLUTION_SLUGS, type SolutionSlug } from '@/components/platform/nav';
 import { SOLUTION_LIST, SOLUTION_PAGES, type SolutionPage } from '@/components/platform/solution-pages';
+import { SoonTag } from '@/components/platform/SoonTag';
 
 export const dynamicParams = false;
 
@@ -74,9 +75,12 @@ export default function SolutionDetailPage({ params }: { params: { solution: str
           <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {page.features.map((f) => (
               <li key={f.title} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-lg shadow-blue-900/[0.05] transition hover:-translate-y-0.5 hover:shadow-xl">
-                <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${page.soft}`}>
-                  <f.icon className="h-6 w-6" aria-hidden="true" />
-                </span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${page.soft}`}>
+                    <f.icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  {f.soon ? <SoonTag /> : null}
+                </div>
                 <h3 className="mt-5 text-lg font-bold text-[#0B1B3F]">{f.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.text}</p>
               </li>

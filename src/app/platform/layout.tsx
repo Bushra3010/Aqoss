@@ -43,7 +43,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           <FooterColumn title="Resources" links={RESOURCES} />
           <FooterColumn
             title="Company"
-            links={[ABOUT, { href: '/admin/login', label: 'Hotel Sign In' }]}
+            links={[ABOUT, { href: '/admin/login', label: 'Hotel Sign In' }, { href: '/admin/register', label: 'Register your hotel' }]}
           />
         </div>
         <p className="border-t border-white/10 py-6 text-center text-xs text-white/40">

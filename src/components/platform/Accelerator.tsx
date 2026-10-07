@@ -67,7 +67,7 @@ const ITEMS = [
 const DOTS = [-90, -22, 32, 128, 152, 205];
 const RING = 34.5; // ring radius, % of the art
 
-/** "Hotel Productivity Accelerator": the five solutions, as a list and an orbit. */
+/** "Assured Quality of Soft Solutions" (the Accelerator): the five solutions, as a list and an orbit. */
 export function Accelerator() {
   return (
     <section id="solutions" className="relative isolate scroll-mt-20 overflow-hidden bg-gradient-to-b from-[#F5F8FE] to-white">
@@ -80,8 +80,8 @@ export function Accelerator() {
             AI-Powered Hotel Solutions
           </p>
           <h2 data-reveal style={{ '--i': 1 } as CSSProperties} className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#0B1B3F] sm:text-6xl">
-            Hotel Productivity
-            <span className="block bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text pb-1 text-transparent">Accelerator</span>
+            Assured Quality of
+            <span className="block bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text pb-1 text-transparent">Soft Solutions</span>
           </h2>
           <p data-reveal style={{ '--i': 2 } as CSSProperties} className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
             AQOSS hotel solutions accelerate your hotel&apos;s productivity with smart automation, seamless management, and

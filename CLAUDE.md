@@ -224,8 +224,16 @@ The AQOSS website's other pages — `/about` and one per solution (`/ai-website`
 `/ai-sales`, `/booking-engine`, `/reputation`) — are rewritten by middleware to `/platform/<path>`
 on the main domain only, from `PLATFORM_PAGES` in `src/components/platform/nav.ts`; add a path
 there when adding a page. They share `src/app/platform/layout.tsx` (header, footer, font, and the
-main-domain check). Solution page copy lives in `solution-pages.ts` and must describe only
-features that exist.
+main-domain check). Solution page copy lives in `solution-pages.ts` (and the home cards in
+`Solutions.tsx`) and must describe only features that exist — an announced feature that is not
+built yet carries `soon: true` and renders a "Coming soon" tag (`SoonTag`); drop the flag only when
+it ships. `/blog` and `/training` (the Resources menu) are "Coming soon" pages until there is real
+content; do not fill them with sample posts.
+
+**Hotel registration** (`/admin/register`, linked from the CRM sign-in) is public — middleware lets
+it through signed out — and only stores a `hotel_registrations` row (migration 16). It never creates
+an account: a super admin approves it under Hotel registrations, then adds the hotel and the
+staff sign-in as usual.
 
 Every hotel website is served at `<website-slug>.<NEXT_PUBLIC_ROOT_DOMAIN>` — in production
 `the-serenity-inn-goa.aqoss.com`, in dev `the-serenity-inn-goa.localhost:3000`. `resolveTenantByHost`
