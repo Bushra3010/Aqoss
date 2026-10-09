@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { ArrowRight, BarChart3, CalendarDays, Megaphone, Settings, UserRound, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, Megaphone, Settings, UserRound } from 'lucide-react';
 import { AqossMark } from '@/components/platform/Art';
 import { Reveal } from '@/components/platform/Reveal';
 import { cn } from '@/lib/utils';
@@ -67,36 +67,39 @@ const ITEMS = [
 const DOTS = [-90, -22, 32, 128, 152, 205];
 const RING = 34.5; // ring radius, % of the art
 
-/** "Assured Quality of Soft Solutions" (the Accelerator): the five solutions, as a list and an orbit. */
+/** "Assured Quality of Soft Solutions" (the Accelerator), the home page's hero: the five solutions, as a list and an orbit. */
 export function Accelerator() {
   return (
     <section id="solutions" className="relative isolate scroll-mt-20 overflow-hidden bg-gradient-to-b from-[#F5F8FE] to-white">
       <div className="absolute -right-48 top-24 -z-10 h-[820px] w-[1100px] rounded-full bg-[#EAF1FD]/70 blur-sm" aria-hidden="true" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:py-24">
+      {/* From lg up the whole section, down to "Explore All Features", fits one
+          window under the 69px header: spacing is tight and the orbit is sized
+          by the window's height, growing back on tall screens (tall:). */}
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:min-h-[calc(100svh-69px)] lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:py-6">
         <Reveal>
-          <p data-reveal style={{ '--i': 0 } as CSSProperties} className="inline-flex items-center gap-2 rounded-full bg-blue-100/70 px-4 py-2 text-sm font-medium text-blue-700">
-            <Zap className="h-4 w-4 fill-blue-600 text-blue-600" aria-hidden="true" />
-            AI-Powered Hotel Solutions
+          <p data-reveal style={{ '--i': 0 } as CSSProperties} className="flex items-center gap-2.5">
+            <AqossMark className="h-11 w-auto lg:h-9 tall:h-11" />
+            <span className="text-[28px] font-extrabold tracking-tight text-[#003358] lg:text-[24px] tall:text-[28px]">AQOSS</span>
           </p>
-          <h2 data-reveal style={{ '--i': 1 } as CSSProperties} className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#0B1B3F] sm:text-6xl">
+          <h1 data-reveal style={{ '--i': 1 } as CSSProperties} className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#0B1B3F] sm:text-6xl lg:mt-4 lg:text-5xl tall:mt-6 tall:text-6xl">
             Assured Quality of
             <span className="block bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text pb-1 text-transparent">Soft Solutions</span>
-          </h2>
-          <p data-reveal style={{ '--i': 2 } as CSSProperties} className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
+          </h1>
+          <p data-reveal style={{ '--i': 2 } as CSSProperties} className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600 lg:mt-3 lg:text-base tall:mt-5 tall:text-lg">
             AQOSS hotel solutions accelerate your hotel&apos;s productivity with smart automation, seamless management, and
             powerful tools — all in one platform.
           </p>
 
-          <ul className="mt-8 max-w-[630px] space-y-3">
+          <ul className="mt-8 max-w-[630px] space-y-3 lg:mt-5 lg:space-y-2 tall:mt-8 tall:space-y-3">
             {ITEMS.map((s, i) => (
               <li key={s.id} data-reveal style={{ '--i': 3 + i } as CSSProperties}>
                 <a
                   href={s.href}
-                  className="group flex items-center gap-4 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm shadow-slate-900/[0.03] transition hover:border-blue-100 hover:shadow-md"
+                  className="group flex items-center gap-4 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm shadow-slate-900/[0.03] transition hover:border-blue-100 hover:shadow-md lg:py-1.5 tall:py-3"
                 >
-                  <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${s.soft}`}>
-                    <span className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${s.tile} text-white shadow-sm`}>
+                  <span className={`flex h-14 w-14 shrink-0 lg:h-11 lg:w-11 tall:h-14 tall:w-14 items-center justify-center rounded-xl ${s.soft}`}>
+                    <span className={`flex h-10 w-10 items-center lg:h-8 lg:w-8 tall:h-10 tall:w-10 justify-center rounded-lg bg-gradient-to-br ${s.tile} text-white shadow-sm`}>
                       <s.icon className="h-5 w-5" aria-hidden="true" />
                     </span>
                   </span>
@@ -110,8 +113,8 @@ export function Accelerator() {
             ))}
           </ul>
 
-          <div data-reveal style={{ '--i': 3 + ITEMS.length } as CSSProperties} className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
-            <a href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-blue-700 px-14 py-4 text-[15px] font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800">
+          <div data-reveal style={{ '--i': 3 + ITEMS.length } as CSSProperties} className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 lg:mt-5 tall:mt-8">
+            <a href="/#book-demo" className="inline-flex items-center gap-3 rounded-xl bg-blue-700 px-14 py-4 text-[15px] lg:py-3 tall:py-4 font-semibold text-white shadow-lg shadow-blue-700/25 hover:bg-blue-800">
               Book a Demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
             <a href="#website" className="group inline-flex items-center gap-2 text-[15px] font-semibold text-blue-700">
@@ -120,7 +123,7 @@ export function Accelerator() {
           </div>
         </Reveal>
 
-        <Orbit />
+        <Orbit className="max-w-[720px] lg:max-w-[min(640px,calc(100svh-69px-3rem))]" />
       </div>
     </section>
   );

@@ -4,6 +4,11 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      screens: {
+        // A desktop window with room to spare: lets a section that must fit one
+        // window (the AQOSS hero) grow back to full size.
+        tall: { raw: '(min-width: 1024px) and (min-height: 900px)' },
+      },
       colors: {
         brand: {
           50: 'var(--brand-50)',

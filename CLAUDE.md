@@ -212,13 +212,10 @@ over `/` or the other AQOSS pages — visiting them ends it — and an explicit 
 wins over it. (It once did take over `/`, so the AQOSS home showed whichever hotel an admin had
 last opened.)
 
-The AQOSS home page's hero search is a plain GET form back to `/` (middleware keeps the query
-string when it rewrites). It only *finds* hotels by name, city or address; each result opens on
-the hotel's own subdomain with the dates, and availability is judged there. Offers & Deals lists
-active, in-date offers from published websites, showing a coupon code only when an active,
-usable coupon is linked to the offer. The hero badges are counts from the database — do not
-put invented figures (hotel counts, satisfaction rates) or products AQOSS doesn't have (flights,
-trains) on this page.
+The AQOSS home page opens with the Accelerator ("Assured Quality of Soft Solutions",
+`Accelerator.tsx`) as its hero, then the solutions and About/Book demo. It no longer has a hotel
+search, Offers & Deals or a hotel list. Do not put invented figures (hotel counts, satisfaction
+rates) or products AQOSS doesn't have (flights, trains) on this page.
 
 The AQOSS website's other pages — `/about` and one per solution (`/ai-website`, `/ai-marketing`,
 `/ai-sales`, `/booking-engine`, `/reputation`) — are rewritten by middleware to `/platform/<path>`

@@ -29,9 +29,6 @@ export const HEADER_NAV = NAV.filter((item) => !HIDDEN_FROM_HEADER.includes(item
 export const RESOURCES = [
   { href: '/blog', label: 'Blog', text: 'Guides and ideas for running a hotel — coming soon' },
   { href: '/training', label: 'Training videos', text: 'Short videos on using AQOSS — coming soon' },
-  { href: '/#offers', label: 'Offers & deals', text: 'Current offers from AQOSS hotels' },
-  { href: '/#hotels', label: 'Hotels on AQOSS', text: 'Browse the websites we run' },
-  { href: '/#why-aqoss', label: 'Why AQOSS', text: 'What hotels get from the platform' },
   { href: '/#book-demo', label: 'Book a demo', text: 'See AQOSS with your hotel in mind' },
 ];
 
