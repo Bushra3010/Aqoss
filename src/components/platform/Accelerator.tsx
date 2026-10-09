@@ -1,4 +1,6 @@
-import type { CSSProperties } from 'react';
+'use client';
+
+import { useEffect, useState, type CSSProperties, type FocusEvent } from 'react';
 import { ArrowRight, BarChart3, CalendarDays, Megaphone, Settings, UserRound } from 'lucide-react';
 import { AqossMark } from '@/components/platform/Art';
 import { Reveal } from '@/components/platform/Reveal';
@@ -67,8 +69,36 @@ const ITEMS = [
 const DOTS = [-90, -22, 32, 128, 152, 205];
 const RING = 34.5; // ring radius, % of the art
 
-/** "Assured Quality of Soft Solutions" (the Accelerator), the home page's hero: the five solutions, as a list and an orbit. */
+/** How long each solution stays highlighted before the next one takes over. */
+const ROTATE_MS = 1000;
+
+/**
+ * "Assured Quality of Soft Solutions" (the Accelerator), the home page's hero:
+ * the five solutions, as a list and an orbit. One solution is highlighted in
+ * both at a time, moving on every second. Pointing at (or tabbing into) the
+ * list holds the highlight on that card; leaving it resumes from there.
+ */
 export function Accelerator() {
+  const [active, setActive] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  // Keyboard focus only: a clicked card keeps focus too, and must not hold
+  // the rotation once the pointer has left.
+  const [keyFocus, setKeyFocus] = useState(false);
+  const paused = hovered || keyFocus;
+
+  // One interval at a time: it is torn down on pause and started afresh on
+  // resume, so it carries on from the card the visitor left highlighted.
+  useEffect(() => {
+    if (paused) return;
+    const id = window.setInterval(() => setActive((i) => (i + 1) % ITEMS.length), ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [paused]);
+
+  const enterFocus = (e: FocusEvent<HTMLUListElement>) => setKeyFocus(e.target.matches(':focus-visible'));
+  const leaveFocus = (e: FocusEvent<HTMLUListElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKeyFocus(false);
+  };
+
   return (
     <section id="solutions" className="relative isolate scroll-mt-20 overflow-hidden bg-gradient-to-b from-[#F5F8FE] to-white">
       <div className="absolute -right-48 top-24 -z-10 h-[820px] w-[1100px] rounded-full bg-[#EAF1FD]/70 blur-sm" aria-hidden="true" />
@@ -91,12 +121,27 @@ export function Accelerator() {
             powerful tools — all in one platform.
           </p>
 
-          <ul className="mt-8 max-w-[630px] space-y-3 lg:mt-5 lg:space-y-2 tall:mt-8 tall:space-y-3">
+          <ul
+            className="mt-8 max-w-[630px] space-y-3 lg:mt-5 lg:space-y-2 tall:mt-8 tall:space-y-3"
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            onFocus={enterFocus}
+            onBlur={leaveFocus}
+          >
             {ITEMS.map((s, i) => (
               <li key={s.id} data-reveal style={{ '--i': 3 + i } as CSSProperties}>
                 <a
                   href={s.href}
-                  className="group flex items-center gap-4 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm shadow-slate-900/[0.03] transition hover:border-blue-100 hover:shadow-md lg:py-1.5 tall:py-3"
+                  onMouseEnter={() => setActive(i)}
+                  onFocus={() => setActive(i)}
+                  onClick={() => setActive(i)}
+                  aria-current={i === active ? 'true' : undefined}
+                  className={cn(
+                    'group flex items-center gap-4 rounded-xl border bg-white px-3 py-3 transition-[border-color,box-shadow] duration-300 ease-out lg:py-1.5 tall:py-3',
+                    i === active
+                      ? 'border-blue-500 shadow-md shadow-blue-700/10'
+                      : 'border-slate-100 shadow-sm shadow-slate-900/[0.03]',
+                  )}
                 >
                   <span className={`flex h-14 w-14 shrink-0 lg:h-11 lg:w-11 tall:h-14 tall:w-14 items-center justify-center rounded-xl ${s.soft}`}>
                     <span className={`flex h-10 w-10 items-center lg:h-8 lg:w-8 tall:h-10 tall:w-10 justify-center rounded-lg bg-gradient-to-br ${s.tile} text-white shadow-sm`}>
@@ -107,7 +152,10 @@ export function Accelerator() {
                     <span className="block font-semibold text-slate-900">{s.title}</span>
                     <span className="block text-sm text-slate-500">{s.text}</span>
                   </span>
-                  <ArrowRight className="mr-3 h-5 w-5 shrink-0 text-blue-600 transition group-hover:translate-x-1" aria-hidden="true" />
+                  <ArrowRight
+                    className={cn('mr-3 h-5 w-5 shrink-0 text-blue-600 transition duration-300', i === active && 'translate-x-1')}
+                    aria-hidden="true"
+                  />
                 </a>
               </li>
             ))}
@@ -123,7 +171,7 @@ export function Accelerator() {
           </div>
         </Reveal>
 
-        <Orbit className="max-w-[720px] lg:max-w-[min(640px,calc(100svh-69px-3rem))]" />
+        <Orbit active={ITEMS[active].id} className="max-w-[720px] lg:max-w-[min(640px,calc(100svh-69px-3rem))]" />
       </div>
     </section>
   );
@@ -133,7 +181,7 @@ export function Accelerator() {
  * AQOSS at the centre of its five solutions. Text is sized in container units
  * (`cqw`) so the art scales as one piece at any width it is given.
  */
-function Orbit({ className = 'max-w-[720px]' }: { className?: string }) {
+function Orbit({ active, className = 'max-w-[720px]' }: { active: string; className?: string }) {
   return (
     <div
       className={cn('orbit relative mx-auto aspect-square w-full', className)}
@@ -166,13 +214,19 @@ function Orbit({ className = 'max-w-[720px]' }: { className?: string }) {
           <a
             key={s.id}
             href={s.href}
-            className="absolute w-[23%] -translate-x-1/2 -translate-y-1/2"
+            className={cn(
+              'absolute w-[23%] -translate-x-1/2 -translate-y-1/2 transition-transform duration-300 ease-out',
+              s.id === active && 'z-10 scale-110',
+            )}
             style={{ left: `${s.at.x}%`, top: `${s.at.y}%` }}
             tabIndex={-1}
           >
             <span className="orbit-counter block">
               <span
-                className="block rounded-[18%] border border-white bg-white/95 p-[9%] shadow-xl shadow-blue-900/10"
+                className={cn(
+                  'block rounded-[18%] border bg-white/95 p-[9%] shadow-xl shadow-blue-900/10 transition-[border-color,box-shadow] duration-300',
+                  s.id === active ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-white',
+                )}
                 style={{ transform: `rotate(${s.at.r}deg)` }}
               >
                 <span className={`flex aspect-[1.2] items-center justify-center rounded-[20%] bg-gradient-to-br ${s.tile} text-white shadow-lg`}>
