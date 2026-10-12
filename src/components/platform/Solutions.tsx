@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight, CalendarCheck, Globe, Megaphone, Star, TrendingUp, Zap } from 'lucide-react';
-import { SoonTag } from '@/components/platform/SoonTag';
 
 /**
  * Only what the platform really does goes in these lists — this page sells it.
- * An announced feature that is not built yet is `{ text, soon: true }` and
- * shows a "Coming soon" tag. Each card's id is the anchor the header menu and
+ * An announced feature that is not built yet is `{ text, soon: true }`; the
+ * flag is a record for us and is not shown on the page. Each card's id is the anchor the header menu and
  * the Accelerator link to.
  */
 type Point = string | { text: string; soon: true };
@@ -86,7 +85,7 @@ export function Solutions() {
     <section className="relative isolate overflow-hidden bg-gradient-to-br from-[#F4F8FF] via-[#F8FAFF] to-[#EEF4FD]">
       <div className="absolute -right-40 -top-24 -z-10 h-[760px] w-[760px] rounded-full bg-[#E6EFFC]/70" aria-hidden="true" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
+      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6">
         <div className="relative">
           <p className="inline-flex items-center gap-2 rounded-full bg-blue-100/70 px-4 py-2 text-sm font-medium text-blue-700">
             <Zap className="h-4 w-4 fill-blue-600 text-blue-600" aria-hidden="true" />
@@ -120,10 +119,7 @@ export function Solutions() {
                       return (
                         <li key={text} className="flex gap-2.5">
                           <span className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${s.dot}`} aria-hidden="true" />
-                          <span>
-                            {text}
-                            {typeof p === 'string' ? null : <SoonTag className="ml-2 align-[1px]" />}
-                          </span>
+                          <span>{text}</span>
                         </li>
                       );
                     })}

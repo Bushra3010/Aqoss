@@ -25,10 +25,11 @@ export const NAV = [
 const HEADER_ORDER = ['/booking-engine', '/ai-website', '/ai-marketing', '/ai-sales'];
 export const HEADER_NAV = HEADER_ORDER.map((href) => NAV.find((item) => item.href === href)!);
 
-/** The header's "Resources" menu — learning material, then sections of the home page. */
+/**
+ * The header's "Resources" menu. Blog and Training videos (`/blog`,
+ * `/training`) are left out until they have content; the pages still exist.
+ */
 export const RESOURCES = [
-  { href: '/blog', label: 'Blog', text: 'Guides and ideas for running a hotel — coming soon' },
-  { href: '/training', label: 'Training videos', text: 'Short videos on using AQOSS — coming soon' },
   { href: '/#book-demo', label: 'Book a demo', text: 'See AQOSS with your hotel in mind' },
 ];
 

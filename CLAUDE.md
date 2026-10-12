@@ -221,11 +221,12 @@ The AQOSS website's other pages — `/about` and one per solution (`/ai-website`
 `/ai-sales`, `/booking-engine`, `/reputation`) — are rewritten by middleware to `/platform/<path>`
 on the main domain only, from `PLATFORM_PAGES` in `src/components/platform/nav.ts`; add a path
 there when adding a page. They share `src/app/platform/layout.tsx` (header, footer, font, and the
-main-domain check). Solution page copy lives in `solution-pages.ts` (and the home cards in
-`Solutions.tsx`) and must describe only features that exist — an announced feature that is not
-built yet carries `soon: true` and renders a "Coming soon" tag (`SoonTag`); drop the flag only when
-it ships. `/blog` and `/training` (the Resources menu) are "Coming soon" pages until there is real
-content; do not fill them with sample posts.
+main-domain check). Solution page
+copy lives in `solution-pages.ts` (and the home cards in `Solutions.tsx`). An announced feature
+that is not built yet carries `soon: true`; the site no longer shows a "Coming soon" tag for it
+(the owner's call), so the flag is the only record of which lines are promises — drop it when the
+feature ships. `/blog` and `/training` are "Coming soon" pages, left out of the Resources menu and
+footer until there is real content; do not fill them with sample posts.
 
 **Hotel registration** (`/admin/register`, linked from the CRM sign-in) is public — middleware lets
 it through signed out — and only stores a `hotel_registrations` row (migration 16). It never creates

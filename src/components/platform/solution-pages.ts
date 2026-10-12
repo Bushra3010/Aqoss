@@ -56,7 +56,7 @@ export type SolutionPage = {
   intro: string;
   /** Short labels floating around the hero art. */
   chips: [string, string, string];
-  /** `soon` marks a feature that is announced but not built yet; the page tags it "Coming soon". */
+  /** `soon` marks a feature that is announced but not built yet (not shown on the page). */
   features: { icon: LucideIcon; title: string; text: string; soon?: boolean }[];
   steps: { title: string; text: string }[];
   /** "Inside the panel": what the hotel's team does day to day. */
@@ -67,8 +67,8 @@ export type SolutionPage = {
 /*
  * Every line here describes something the platform really does today — this
  * is a sales page, and a hotel will hold us to it. Announced features that are
- * not built yet carry `soon: true` and show a "Coming soon" tag; drop the flag
- * only once the feature ships.
+ * not built yet carry `soon: true` — no longer shown on the page, but kept so
+ * we know which lines are promises; drop the flag once the feature ships.
  */
 export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPage> = {
   'ai-website': {
