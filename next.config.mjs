@@ -5,9 +5,14 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 
 // The main domain decides which requests get the AQOSS website and which are
 // a hotel's subdomain, so it must be known at build time (middleware has it
-// inlined). Explicit settings win; otherwise Netlify's own `URL` build variable
-// — the site's primary address — is used, so a Netlify deploy works unconfigured.
-const hostedUrl = process.env.URL;
+// inlined). Explicit settings win; otherwise the host's own build variables are
+// used — Netlify's `URL`, or on Vercel the production domain (a preview build
+// uses its branch address instead) — so a deploy works unconfigured.
+const vercelHost =
+  process.env.VERCEL_ENV === 'production'
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+    : process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+const hostedUrl = process.env.URL || (vercelHost ? `https://${vercelHost}` : undefined);
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || hostedUrl || 'http://localhost:3000';
 const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || new URL(appUrl).host;
 

@@ -12,3 +12,5 @@ next-env.d.ts
 .vercel
 supabase/.temp/
 supabase/.branches/
+.env*
+!.env.example
