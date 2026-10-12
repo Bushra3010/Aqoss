@@ -21,9 +21,9 @@ export const NAV = [
   { href: '/reputation', label: 'Reputation' },
 ];
 
-/** Solutions shown in the header; the footer lists all of `NAV`. */
-const HIDDEN_FROM_HEADER = ['/booking-engine', '/reputation'];
-export const HEADER_NAV = NAV.filter((item) => !HIDDEN_FROM_HEADER.includes(item.href));
+/** Solutions shown in the header, in header order; the footer lists all of `NAV`. */
+const HEADER_ORDER = ['/booking-engine', '/ai-website', '/ai-marketing', '/ai-sales'];
+export const HEADER_NAV = HEADER_ORDER.map((href) => NAV.find((item) => item.href === href)!);
 
 /** The header's "Resources" menu — learning material, then sections of the home page. */
 export const RESOURCES = [
