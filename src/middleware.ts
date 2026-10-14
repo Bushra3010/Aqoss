@@ -135,7 +135,13 @@ export async function middleware(request: NextRequest) {
   const loginPath = isAdminArea ? '/admin/login' : '/login';
 
   // Hotel registration is public: it only submits a request (migration 16).
-  const isPublic = pathname === loginPath || pathname === '/admin/register';
+  // So are the password-reset pages: the reset link is what signs you in, and
+  // an expired one should say so rather than bounce to the sign-in form.
+  const isPublic =
+    pathname === loginPath ||
+    pathname === '/admin/register' ||
+    pathname === '/admin/forgot-password' ||
+    pathname === '/admin/reset-password';
 
   if ((isAdminArea || isCustomerArea) && !signedIn && !isPublic) {
     const loginUrl = request.nextUrl.clone();

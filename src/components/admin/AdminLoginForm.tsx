@@ -1,12 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Alert, Field } from '@/components/ui';
 import { adminSignIn, type AdminAuthState } from '@/app/admin/actions';
 
 const initial: AdminAuthState = {};
 
-function Submit() {
+export function AdminSubmit({ label = 'Sign in', busyLabel = 'Signing in…' }: { label?: string; busyLabel?: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -16,7 +17,7 @@ function Submit() {
       className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       disabled={pending}
     >
-      {pending ? 'Signing in…' : 'Sign in'}
+      {pending ? busyLabel : label}
     </button>
   );
 }
@@ -50,7 +51,13 @@ export function AdminLoginForm({
         />
       </Field>
 
-      <Submit />
+      <div className="flex justify-end">
+        <Link href="/admin/forgot-password" className="text-sm font-medium text-blue-600 hover:underline">
+          Forgot password?
+        </Link>
+      </div>
+
+      <AdminSubmit />
     </form>
   );
 }

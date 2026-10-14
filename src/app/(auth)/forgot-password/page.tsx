@@ -4,7 +4,7 @@ import { ForgotPasswordForm } from '@/components/website/AuthForms';
 
 export const metadata: Metadata = { title: 'Reset your password' };
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage({ searchParams }: { searchParams: { error?: string } }) {
   return (
     <div className="card p-7">
       <h1 className="text-xl font-bold text-slate-900">Reset your password</h1>
@@ -12,7 +12,13 @@ export default function ForgotPasswordPage() {
         We will email you a link to choose a new one.
       </p>
 
-      <ForgotPasswordForm />
+      <ForgotPasswordForm
+        initialError={
+          searchParams.error === 'link_expired'
+            ? 'That reset link has expired or was already used. Request a new one below.'
+            : undefined
+        }
+      />
 
       <p className="mt-6 text-center text-sm text-slate-600">
         <Link href="/login" className="font-medium text-slate-900 underline">

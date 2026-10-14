@@ -6,7 +6,8 @@ import { headers } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { registerSchema } from '@/lib/validation/schemas';
-import { env } from '@/lib/env';
+import { env, isDemoMode } from '@/lib/env';
+import { rateLimit } from '@/lib/rate-limit';
 import { getSiteBase } from '@/lib/tenant';
 import { siteHome } from '@/lib/site-url';
 import { safeLocalPath } from '@/lib/safe-path';
@@ -18,7 +19,22 @@ import { safeLocalPath } from '@/lib/safe-path';
  * beyond the form post itself, and the session cookie is set server-side.
  */
 
-export type AuthState = { error?: string; success?: string };
+export type AuthState = {
+  error?: string;
+  success?: string;
+  /** Demo mode only: the reset link that would have been emailed. */
+  demoLink?: string;
+};
+
+/**
+ * The same reset flow serves customers and CRM staff; `area` (a hidden field)
+ * only decides which page the emailed link opens and where to go afterwards.
+ */
+function resetArea(formData: FormData) {
+  return formData.get('area') === 'admin'
+    ? { resetPage: '/admin/reset-password', home: '/admin' }
+    : { resetPage: '/reset-password', home: '/dashboard' };
+}
 
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get('email') ?? '').trim();
@@ -92,31 +108,51 @@ export async function requestPasswordReset(_prev: AuthState, formData: FormData)
   const email = String(formData.get('email') ?? '').trim();
   if (!email) return { error: 'Please enter your email address.' };
 
+  // Each request sends an email: cap them per address and per caller.
+  const ip = headers().get('x-forwarded-for')?.split(',')[0]?.trim() || headers().get('x-real-ip') || 'unknown';
+  const window = { limit: 5, windowMs: 15 * 60 * 1000 };
+  if (!rateLimit(`pw-reset:ip:${ip}`, window).allowed || !rateLimit(`pw-reset:email:${email.toLowerCase()}`, window).allowed) {
+    return { error: 'Too many reset requests. Please wait a few minutes and try again.' };
+  }
+
+  const { resetPage } = resetArea(formData);
   const supabase = createServerSupabase();
   const origin = headers().get('origin') ?? env.appUrl;
 
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  const { data } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=${resetPage}`,
   });
 
   // Always the same answer, whether or not the address exists.
-  return { success: 'If that address is registered, a reset link is on its way.' };
+  const success = 'If that address is registered, a reset link is on its way.';
+  if (isDemoMode) {
+    const demoLink = (data as { demoLink?: string } | null)?.demoLink;
+    return { success: `${success} (Demo mode sends no email.)`, demoLink };
+  }
+  return { success };
 }
 
 export async function updatePassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm') ?? '');
+  const { home } = resetArea(formData);
 
   if (password.length < 8) return { error: 'Use at least 8 characters.' };
   if (password !== confirm) return { error: 'The two passwords do not match.' };
 
   const supabase = createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // The reset link signs you in; without that session there is nothing to update.
+  if (!user) return { error: 'This reset link has expired. Please request a new one.' };
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) return { error: error.message };
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  redirect(home);
 }
 
 export async function signOut() {

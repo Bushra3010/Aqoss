@@ -7,7 +7,7 @@
  * deliberately not something that could be mistaken for production auth.
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { getTables, DEMO_PASSWORD } from './store';
 import { DEMO_SESSION_COOKIE } from './constants';
 
@@ -30,6 +30,21 @@ interface AuthUser {
   email: string | null;
   phone: string | null;
   user_metadata: Record<string, unknown>;
+}
+
+/**
+ * Password-recovery codes, standing in for the link Supabase would email.
+ * On `globalThis` like the store, so the action that issues a code and the
+ * callback route that redeems it (separate bundles) share one map.
+ */
+const RECOVERY_KEY = Symbol.for('aqoss.demo.recoveryCodes');
+const RECOVERY_TTL_MS = 60 * 60 * 1000;
+type GlobalWithRecovery = typeof globalThis & {
+  [RECOVERY_KEY]?: Map<string, { profileId: string; expiresAt: number }>;
+};
+
+function recoveryCodes() {
+  return ((globalThis as GlobalWithRecovery)[RECOVERY_KEY] ??= new Map());
 }
 
 function toAuthUser(profile: Record<string, any>): AuthUser {
@@ -194,14 +209,39 @@ export function createDemoAuth(cookies: CookieStore) {
       },
     },
 
-    async resetPasswordForEmail() {
-      // Nothing to email in demo mode; the caller already answers vaguely.
-      return { data: {}, error: null };
+    /**
+     * Nothing is emailed in demo mode. Instead the link Supabase would have
+     * sent comes back as `demoLink` (not part of the real API), so the form can
+     * show it on screen. Only for an active account, like the real thing.
+     */
+    async resetPasswordForEmail(email: string, options?: { redirectTo?: string }) {
+      const profile = tables.profiles.find(
+        (p) => p.is_active && String(p.email).toLowerCase() === email.trim().toLowerCase(),
+      );
+      if (!profile || !options?.redirectTo) return { data: {}, error: null };
+
+      const code = randomBytes(24).toString('hex');
+      recoveryCodes().set(code, { profileId: profile.id, expiresAt: Date.now() + RECOVERY_TTL_MS });
+
+      const link = new URL(options.redirectTo);
+      link.searchParams.set('code', code);
+      return { data: { demoLink: link.toString() }, error: null };
     },
 
-    async exchangeCodeForSession() {
-      const user = currentUser();
-      return { data: { user, session: user ? { user } : null }, error: user ? null : { message: 'Invalid code' } };
+    /** Redeems a recovery code once, signing its account in. */
+    async exchangeCodeForSession(code: string) {
+      const entry = recoveryCodes().get(code);
+      recoveryCodes().delete(code);
+      const profile =
+        entry && entry.expiresAt > Date.now()
+          ? tables.profiles.find((p) => p.id === entry.profileId && p.is_active)
+          : undefined;
+
+      if (!profile) return { data: { user: null, session: null }, error: { message: 'Invalid code' } };
+
+      cookies.set(DEMO_SESSION_COOKIE, profile.id);
+      const user = toAuthUser(profile);
+      return { data: { user, session: { user } }, error: null };
     },
   };
 }

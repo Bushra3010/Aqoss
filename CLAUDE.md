@@ -133,6 +133,13 @@ access; the last active all-hotels super admin can't be demoted or removed. Remo
 the account (`ban_duration`) instead of deleting it, so their bookings and audit entries keep their
 author. Passwords are never logged. The demo stands in for `auth.admin` in `src/lib/demo/auth.ts`.
 
+**Password reset** is one flow for guests and staff (`requestPasswordReset` / `updatePassword` in
+`(auth)/actions.ts`); a hidden `area=admin` field picks `/admin/reset-password` and lands on `/admin`.
+The emailed link goes through `/auth/callback`, which redirects on the request's own host (not
+`nextUrl.origin`, which loses the hotel subdomain). In Supabase, Auth → URL configuration must allow
+`https://*.aqoss.com/auth/callback**` (and the main domain), or the emails link nowhere useful. Demo
+mode sends no email: `resetPasswordForEmail` issues a one-time code and the form shows the link.
+
 **Leads** are abandoned bookings: PENDING and unpaid for longer than `BOOKING_HOLD_MINUTES`. The
 booking row is the lead; `booking_leads` only stores follow-up (status, notes). CONVERTED is
 derived from the booking being paid and is never set by hand.

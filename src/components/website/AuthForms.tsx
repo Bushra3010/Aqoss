@@ -24,8 +24,24 @@ function Submit({ label, busyLabel }: { label: string; busyLabel: string }) {
 
 function Feedback({ state }: { state: AuthState }) {
   if (state.error) return <Alert>{state.error}</Alert>;
-  if (state.success) return <Alert tone="success">{state.success}</Alert>;
+  if (state.success) {
+    return (
+      <Alert tone="success">
+        {state.success}
+        {state.demoLink ? <DemoResetLink href={state.demoLink} /> : null}
+      </Alert>
+    );
+  }
   return null;
+}
+
+/** Demo mode only: the reset link stands in for the email it would be in. */
+export function DemoResetLink({ href }: { href: string }) {
+  return (
+    <a href={href} className="mt-2 block font-semibold underline">
+      Open the reset link
+    </a>
+  );
 }
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
@@ -102,8 +118,8 @@ export function RegisterForm() {
   );
 }
 
-export function ForgotPasswordForm() {
-  const [state, action] = useFormState(requestPasswordReset, initial);
+export function ForgotPasswordForm({ initialError }: { initialError?: string }) {
+  const [state, action] = useFormState(requestPasswordReset, { error: initialError });
 
   return (
     <form action={action} className="mt-6 space-y-4">
