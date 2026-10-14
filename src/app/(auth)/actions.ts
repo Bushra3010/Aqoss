@@ -11,6 +11,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { getSiteBase } from '@/lib/tenant';
 import { siteHome } from '@/lib/site-url';
 import { safeLocalPath } from '@/lib/safe-path';
+import { emailDomainAcceptsMail } from '@/lib/email-domain';
 
 /**
  * Customer authentication (PRD §11), built on Supabase Auth.
@@ -24,7 +25,11 @@ export type AuthState = {
   success?: string;
   /** Demo mode only: the reset link that would have been emailed. */
   demoLink?: string;
+  /** The email address is not one that can receive mail; the form asks for another. */
+  invalidEmail?: boolean;
 };
+
+const INVALID_EMAIL = 'We could not find that email address. Please enter a valid email address.';
 
 /**
  * The same reset flow serves customers and CRM staff; `area` (a hidden field)
@@ -65,7 +70,14 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? 'Please check the details you entered.' };
+    const issue = parsed.error.errors[0];
+    if (issue?.path[0] === 'email') return { error: INVALID_EMAIL, invalidEmail: true };
+    return { error: issue?.message ?? 'Please check the details you entered.' };
+  }
+
+  // Catch typos and made-up domains before Supabase sends a confirmation into the void.
+  if (!(await emailDomainAcceptsMail(parsed.data.email))) {
+    return { error: INVALID_EMAIL, invalidEmail: true };
   }
 
   const supabase = createServerSupabase();
