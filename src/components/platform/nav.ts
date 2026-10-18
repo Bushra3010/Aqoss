@@ -11,7 +11,7 @@ export type SolutionSlug = (typeof SOLUTION_SLUGS)[number];
  * Main-domain paths middleware rewrites to `/platform/<path>`. Hotel
  * subdomains never see them: there they are an ordinary 404.
  */
-export const PLATFORM_PAGES: readonly string[] = [...SOLUTION_SLUGS, 'about', 'blog', 'training'];
+export const PLATFORM_PAGES: readonly string[] = [...SOLUTION_SLUGS, 'about', 'contact', 'privacy', 'terms', 'blog', 'training'];
 
 export const NAV = [
   { href: '/ai-website', label: 'AI Website' },
@@ -34,3 +34,12 @@ export const RESOURCES = [
 ];
 
 export const ABOUT = { href: '/about', label: 'About Us' };
+
+/** Where people reach AQOSS. A real, monitored mailbox — shown in the footer and on the legal pages. */
+export const CONTACT_EMAIL = 'aqosshotelai@gmail.com';
+
+export const LEGAL = [
+  { href: '/contact', label: 'Contact' },
+  { href: '/privacy', label: 'Privacy Policy' },
+  { href: '/terms', label: 'Terms of Service' },
+];

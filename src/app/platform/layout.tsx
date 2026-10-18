@@ -6,7 +6,7 @@ import { isPlatformHost } from '@/lib/site-url';
 import { DemoBanner } from '@/components/DemoBanner';
 import { AqossMark } from '@/components/platform/Art';
 import { PlatformHeader } from '@/components/platform/PlatformClient';
-import { ABOUT, NAV, RESOURCES } from '@/components/platform/nav';
+import { ABOUT, CONTACT_EMAIL, LEGAL, NAV, RESOURCES } from '@/components/platform/nav';
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], display: 'swap' });
 
@@ -38,6 +38,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             <Link href="/#book-demo" className="mt-6 inline-flex rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold hover:bg-blue-800">
               Book a Demo
             </Link>
+            <p className="mt-6 text-sm text-white/60">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">
+                {CONTACT_EMAIL}
+              </a>
+            </p>
           </div>
           <FooterColumn title="Solutions" links={NAV} />
           <FooterColumn title="Resources" links={RESOURCES} />
@@ -46,9 +51,16 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             links={[ABOUT, { href: '/admin/login', label: 'Hotel Sign In' }, { href: '/admin/register', label: 'Register your hotel' }]}
           />
         </div>
-        <p className="border-t border-white/10 py-6 text-center text-xs text-white/40">
-          © {new Date().getFullYear()} AQOSS. All rights reserved.
-        </p>
+        <div className="flex flex-col items-center gap-3 border-t border-white/10 px-4 py-6 text-xs text-white/40 sm:flex-row sm:justify-center sm:gap-6">
+          <p>© {new Date().getFullYear()} AQOSS. All rights reserved.</p>
+          <nav aria-label="Legal" className="flex gap-5">
+            {LEGAL.map((l) => (
+              <Link key={l.href} href={l.href} className="hover:text-white">
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </footer>
     </div>
   );
