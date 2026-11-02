@@ -48,7 +48,8 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "highlights": "{}",
     "metadata": {},
     "created_at": NOW,
-    "updated_at": NOW
+    "updated_at": NOW,
+    "commission_percent": 0
   },
   "hotel_amenities": {
     "sort_order": 0,
@@ -103,7 +104,9 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "sort_order": 0,
     "metadata": {},
     "created_at": NOW,
-    "updated_at": NOW
+    "updated_at": NOW,
+    "extra_adult_price": 0,
+    "extra_child_price": 0
   },
   "room_images": {
     "is_cover": false,
@@ -298,6 +301,15 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "status": "NEW",
     "created_at": NOW,
     "updated_at": NOW
+  },
+  "promotions": {
+    "room_type_ids": [],
+    "is_active": true,
+    "created_at": NOW,
+    "updated_at": NOW
+  },
+  "property_payouts": {
+    "created_at": NOW
   }
 };
 

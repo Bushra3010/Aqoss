@@ -25,7 +25,7 @@ export default async function HotelDetailsPage({ params }: { params: { hotel: st
   return (
     <>
       <PageHeader title="Hotel details" description="What guests see about the property, and the rules bookings follow." />
-      {can(panel.session, 'hotels.write') ? <HotelForm hotel={hotel} /> : <NoAccess />}
+      {can(panel.session, 'hotels.write') ? <HotelForm hotel={hotel} canSetCommission={can(panel.session, 'payouts.write') && !panel.session.hotelScope.length} /> : <NoAccess />}
     </>
   );
 }

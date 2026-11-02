@@ -26,6 +26,8 @@ export default async function HotelBookingsPage({
       searchParams={searchParams}
       hotelId={hotel.id}
       bookingHref={(id) => hotelPanelPath(hotel.slug, `bookings/${id}`)}
+      listHref={hotelPanelPath(hotel.slug, 'bookings')}
+      defaultTab="upcoming"
       newHref={can(panel.session, 'bookings.write') ? hotelPanelPath(hotel.slug, 'bookings/new') : undefined}
     />
   );

@@ -5,8 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { requirePermission, canAccessHotel, type AdminSession } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/api';
-import { couponFormSchema, offerFormSchema } from '@/lib/validation/schemas';
+import { couponFormSchema, offerFormSchema, promotionFormSchema } from '@/lib/validation/schemas';
 import { createCoupon, createOffer, deleteCoupon, deleteOffer, setCouponActive, setOfferActive } from '@/services/offer.service';
+import { createPromotion, deletePromotion, setPromotionActive } from '@/services/promotion.service';
 
 export type OfferActionState = { error?: string; fieldErrors?: Record<string, string> };
 
@@ -32,7 +33,7 @@ function safeReturn(value: FormDataEntryValue | null): string {
 function formFields(formData: FormData) {
   const out: Record<string, unknown> = {};
   for (const [key, value] of formData.entries()) {
-    if (key === 'hotel_ids' || key.startsWith('$')) continue;
+    if (key === 'hotel_ids' || key === 'room_type_ids' || key.startsWith('$')) continue;
     out[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
   }
   out.is_active = formData.get('is_active') === 'on';
@@ -171,6 +172,67 @@ export async function deleteOfferAction(offerId: string): Promise<OfferActionSta
     const title = await deleteOffer(offerId, session.userId);
     revalidatePath('/', 'layout');
     return { deleted: title };
+  } catch (err) {
+    return toState(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Promotions — always one hotel's, so a scoped admin needs that hotel.
+// ---------------------------------------------------------------------------
+
+async function promotionHotel(promotionId: string): Promise<string> {
+  const { data } = await createAdminSupabase()
+    .from('promotions')
+    .select('hotel_id')
+    .eq('id', promotionId)
+    .maybeSingle();
+  if (!data) throw new AppError('That promotion no longer exists.', 404);
+  return data.hotel_id as string;
+}
+
+export async function savePromotion(_prev: OfferActionState, formData: FormData): Promise<OfferActionState> {
+  try {
+    const session = await requirePermission('offers.write');
+    const parsed = promotionFormSchema.safeParse({
+      ...formFields(formData),
+      room_type_ids: formData.getAll('room_type_ids').map(String).filter(Boolean),
+    });
+    if (!parsed.success) return fieldErrorsOf(parsed.error.issues);
+    if (!canAccessHotel(session, parsed.data.hotel_id)) throw new AppError('Choose one of your own hotels.', 403);
+
+    await createPromotion(parsed.data, session.userId);
+    revalidatePath('/', 'layout');
+    redirect(safeReturn(formData.get('return_to')));
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
+    return toState(err);
+  }
+}
+
+export async function togglePromotion(promotionId: string, isActive: boolean): Promise<OfferActionState> {
+  try {
+    const session = await requirePermission('offers.write');
+    if (!canAccessHotel(session, await promotionHotel(promotionId))) {
+      throw new AppError('Choose one of your own hotels.', 403);
+    }
+    await setPromotionActive(promotionId, isActive, session.userId);
+    revalidatePath('/', 'layout');
+    return {};
+  } catch (err) {
+    return toState(err);
+  }
+}
+
+export async function deletePromotionAction(promotionId: string): Promise<OfferActionState> {
+  try {
+    const session = await requirePermission('offers.write');
+    if (!canAccessHotel(session, await promotionHotel(promotionId))) {
+      throw new AppError('Choose one of your own hotels.', 403);
+    }
+    await deletePromotion(promotionId, session.userId);
+    revalidatePath('/', 'layout');
+    return {};
   } catch (err) {
     return toState(err);
   }

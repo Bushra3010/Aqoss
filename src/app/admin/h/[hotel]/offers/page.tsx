@@ -6,7 +6,7 @@ import { NoAccess } from '@/components/admin/shared';
 import { OffersView } from '@/components/admin/views/OffersView';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Offers & coupons · Hotel admin' };
+export const metadata: Metadata = { title: 'Offers & promotions · Hotel admin' };
 
 export default async function HotelOffersPage({ params }: { params: { hotel: string } }) {
   const panel = await getHotelPanel(params.hotel);

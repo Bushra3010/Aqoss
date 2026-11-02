@@ -8,6 +8,9 @@ import { RecordPaymentForm } from '@/components/admin/BookingForms';
 import { paymentMethodLabel } from '@/lib/payment-labels';
 import { BookingActions } from '@/components/admin/BookingActions';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { settle } from '@/lib/settlement';
+import { listBookingPayouts } from '@/services/settlement.service';
+import { PayoutBadge } from '@/components/admin/LinkTabs';
 
 /**
  * Booking detail with the staff actions from PRD §26.
@@ -36,6 +39,10 @@ export async function BookingDetailView({
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const b = booking as any;
   if (hotelId && b.hotel_id !== hotelId) notFound();
+
+  const hotelRow = Array.isArray(b.hotels) ? b.hotels[0] : b.hotels;
+  const payouts = can(session, 'payments.read') ? await listBookingPayouts(b.id) : [];
+  const settlement = settle(b, hotelRow?.commission_percent, payouts.reduce((s, p) => s + p.amount, 0));
   if (!canAccessHotel(session, b.hotel_id)) return <NoAccess />;
 
   const hotel = Array.isArray(b.hotels) ? b.hotels[0] : b.hotels;
@@ -177,6 +184,20 @@ export async function BookingDetailView({
                 <Money label="Refunded" value={Number(b.amount_refunded)} currency={b.currency} />
               ) : null}
             </dl>
+
+            {can(session, 'payments.read') && b.status !== 'PENDING' ? (
+              <dl className="mt-4 space-y-1.5 border-t border-slate-200 pt-3 text-sm">
+                <Money label={`AQOSS commission (${settlement.commissionPercent}%)`} value={-settlement.commission} currency={b.currency} />
+                <div className="flex justify-between font-semibold text-slate-900">
+                  <dt>Payable to property</dt>
+                  <dd>{formatCurrency(settlement.payable, b.currency)}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-slate-500">Payout</dt>
+                  <dd><PayoutBadge status={settlement.payoutStatus} /></dd>
+                </div>
+              </dl>
+            ) : null}
 
             {b.payments?.length ? (
               <ul className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs text-slate-500">

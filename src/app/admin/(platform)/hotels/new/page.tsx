@@ -13,7 +13,7 @@ export default async function NewHotelPage() {
   return (
     <>
       <PageHeader title="Add hotel" description="Create the property, then give it a website." />
-      <HotelForm />
+      <HotelForm canSetCommission={can(session, 'payouts.write') && !session!.hotelScope.length} />
     </>
   );
 }

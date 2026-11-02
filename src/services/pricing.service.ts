@@ -10,18 +10,20 @@ import type {
   CouponValidation,
   PriceBreakdown,
   PriceLine,
+  RoomStayQuote,
   TransportSelection,
 } from '@/types';
 
 /**
  * The single source of truth for what a booking costs (PRD §15).
  *
- * Every figure here is derived from the database — nightly rates from
- * `search_availability`, transport from `transport_slots`, discounts from
+ * Every figure here is derived from the database — availability from
+ * `search_availability`, each line's occupancy rates and promotion from
+ * `quote_room_stay`, transport from `transport_slots`, discounts from
  * `validate_coupon`. Nothing the browser sends is trusted, which is why the
  * checkout page and the booking API both call this same function.
  *
- *   Room + services + transport + tax - discount - coupon = total
+ *   Room + services + transport + tax - promotion - coupon = total
  */
 export async function quoteBooking(input: {
   hotelId: string;
@@ -40,6 +42,8 @@ export async function quoteBooking(input: {
 }): Promise<{
   breakdown: PriceBreakdown;
   availability: AvailabilityResult[];
+  /** One per `input.rooms` entry, in the same order. */
+  roomQuotes: RoomStayQuote[];
   transportLines: { slot_id: string; label: string; seats: number; amount: number }[];
   coupon: CouponValidation | null;
 }> {
@@ -59,7 +63,10 @@ export async function quoteBooking(input: {
   });
 
   const lines: PriceLine[] = [];
+  const roomQuotes: RoomStayQuote[] = [];
+  const promotionLines = new Map<string, number>();
   let roomSubtotal = 0;
+  let promotionDiscount = 0;
   let taxTotal = 0;
   let taxPercent = 0;
   let nights = 0;
@@ -81,9 +88,24 @@ export async function quoteBooking(input: {
       );
     }
 
-    // `match` was priced for the whole party; re-scale to this line's rooms.
-    const perRoom = match.nightly_rates.reduce((s, n) => s + n.price, 0);
-    const lineSubtotal = money(perRoom * requested.rooms);
+    // `match` was priced for the whole party; price this line for its own.
+    const quote = await quoteRoomStay({
+      roomTypeId: requested.room_type_id,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      rooms: requested.rooms,
+      adults: requested.adults,
+      children: requested.children,
+    });
+    roomQuotes.push(quote);
+
+    const lineSubtotal = quote.original_subtotal;
+    const lineSaving = money(quote.original_subtotal - quote.subtotal);
+    if (lineSaving > 0 && quote.promotion) {
+      const label = `${quote.promotion.title} (${quote.promotion.discount_percent}% off)`;
+      promotionLines.set(label, money((promotionLines.get(label) ?? 0) + lineSaving));
+      promotionDiscount += lineSaving;
+    }
 
     roomSubtotal += lineSubtotal;
     nights = match.nights;
@@ -93,10 +115,17 @@ export async function quoteBooking(input: {
       label: match.name,
       detail: `${requested.rooms} room${requested.rooms > 1 ? 's' : ''} × ${match.nights} night${
         match.nights > 1 ? 's' : ''
+      } · ${requested.adults} adult${requested.adults === 1 ? '' : 's'}${
+        requested.children ? `, ${requested.children} child${requested.children === 1 ? '' : 'ren'}` : ''
       }`,
       amount: lineSubtotal,
       kind: 'room',
     });
+  }
+
+  promotionDiscount = money(promotionDiscount);
+  for (const [label, amount] of promotionLines) {
+    lines.push({ label, amount: -amount, kind: 'discount' });
   }
 
   // ---- transport ---------------------------------------------------------
@@ -175,15 +204,17 @@ export async function quoteBooking(input: {
   }
 
   // ---- coupon ------------------------------------------------------------
-  // Applied to the room subtotal only: transport is a third-party cost.
+  // Applied to the room subtotal after promotions: transport is a third-party
+  // cost.
   let couponDiscount = 0;
   let coupon: CouponValidation | null = null;
+  const afterPromotions = money(roomSubtotal - promotionDiscount);
 
   if (input.couponCode) {
     coupon = await validateCoupon({
       code: input.couponCode,
       hotelId: input.hotelId,
-      amount: roomSubtotal,
+      amount: afterPromotions,
       customerId: input.customerId ?? null,
       roomTypeIds: input.rooms.map((r) => r.room_type_id),
     });
@@ -199,7 +230,7 @@ export async function quoteBooking(input: {
   }
 
   // ---- tax & total -------------------------------------------------------
-  const taxableAmount = money(Math.max(roomSubtotal - couponDiscount, 0));
+  const taxableAmount = money(Math.max(afterPromotions - couponDiscount, 0));
   taxTotal = money((taxableAmount * taxPercent) / 100);
 
   lines.push({
@@ -216,7 +247,8 @@ export async function quoteBooking(input: {
     room_subtotal: money(roomSubtotal),
     extra_services_total: 0,
     transport_total: money(transportTotal),
-    discount_total: couponDiscount,
+    discount_total: money(promotionDiscount + couponDiscount),
+    promotion_discount: promotionDiscount,
     coupon_code: input.couponCode ?? null,
     coupon_discount: couponDiscount,
     taxable_amount: taxableAmount,
@@ -226,7 +258,46 @@ export async function quoteBooking(input: {
     lines,
   };
 
-  return { breakdown, availability, transportLines, coupon };
+  return { breakdown, availability, roomQuotes, transportLines, coupon };
+}
+
+/** One booking line, priced by the `quote_room_stay` database function. */
+export async function quoteRoomStay(input: {
+  roomTypeId: string;
+  checkIn: string;
+  checkOut: string;
+  rooms: number;
+  adults: number;
+  children: number;
+}): Promise<RoomStayQuote> {
+  const { data, error } = await createAdminSupabase().rpc('quote_room_stay', {
+    p_room_type_id: input.roomTypeId,
+    p_check_in: input.checkIn,
+    p_check_out: input.checkOut,
+    p_rooms: input.rooms,
+    p_adults: input.adults,
+    p_children: input.children,
+  });
+
+  if (error) throw error;
+  if (!data) throw new AppError('Selected dates are unavailable for this room.', 409);
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const row = data as any;
+  return {
+    nightly_rates: (row.nightly_rates ?? []).map((n: any) => ({
+      date: n.date,
+      price: Number(n.price),
+      base_price: Number(n.base_price ?? n.price),
+      promotion: n.promotion ?? null,
+    })),
+    subtotal: Number(row.subtotal),
+    original_subtotal: Number(row.original_subtotal),
+    promotion: row.promotion
+      ? { ...row.promotion, discount_percent: Number(row.promotion.discount_percent) }
+      : null,
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 /** Thin wrapper over the `validate_coupon` database function (PRD §30). */

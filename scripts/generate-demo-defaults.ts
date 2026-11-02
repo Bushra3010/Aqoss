@@ -19,28 +19,38 @@ type Value = string | number | boolean | null | Record<string, never> | never[] 
 const tables: Record<string, Record<string, Value>> = {};
 const skipped: string[] = [];
 
+/** Read one column definition's default into `cols`, if it has a literal one. */
+function readColumn(table: string, raw: string, cols: Record<string, Value>) {
+  // Drop a trailing comment, then the column's trailing comma.
+  const line = raw.replace(/\s*--.*$/, '').trim().replace(/,$/, '');
+  const cm = line.match(/^(\w+)\s+.*?\bdefault\s+(.+?)(\s+check\b.*|\s+references\b.*|\s+unique\b.*)?$/i);
+  if (!cm) return;
+  const [, col, def] = cm;
+  const d = def.trim();
+  if (col === 'id' || d.startsWith('gen_random_uuid') || d.startsWith('public.next_')) return;
+
+  if (d === 'now()') cols[col] = { now: true };
+  else if (d === 'true' || d === 'false') cols[col] = d === 'true';
+  else if (/^-?\d+(\.\d+)?$/.test(d)) cols[col] = Number(d);
+  else if (d === "'{}'::jsonb") cols[col] = {};
+  else if (d === "'[]'::jsonb" || /^'\{\}'::\w+\[\]$/.test(d)) cols[col] = [];
+  else if (/^'[^']*'(::\w+)?$/.test(d)) cols[col] = d.match(/^'([^']*)'/)![1];
+  else skipped.push(`${table}.${col} = ${d}`);
+}
+
 for (const m of sql.matchAll(/create table public\.(\w+) \(([\s\S]*?)\n\);/g)) {
   const [, table, body] = m;
   const cols: Record<string, Value> = {};
-
-  for (const raw of body.split('\n')) {
-    // Drop a trailing comment, then the column's trailing comma.
-    const line = raw.replace(/\s*--.*$/, '').trim().replace(/,$/, '');
-    const cm = line.match(/^(\w+)\s+.*?\bdefault\s+(.+?)(\s+check\b.*|\s+references\b.*|\s+unique\b.*)?$/i);
-    if (!cm) continue;
-    const [, col, def] = cm;
-    const d = def.trim();
-    if (col === 'id' || d.startsWith('gen_random_uuid') || d.startsWith('public.next_')) continue;
-
-    if (d === 'now()') cols[col] = { now: true };
-    else if (d === 'true' || d === 'false') cols[col] = d === 'true';
-    else if (/^-?\d+(\.\d+)?$/.test(d)) cols[col] = Number(d);
-    else if (d === "'{}'::jsonb") cols[col] = {};
-    else if (d === "'[]'::jsonb" || /^'\{\}'::\w+\[\]$/.test(d)) cols[col] = [];
-    else if (/^'[^']*'(::\w+)?$/.test(d)) cols[col] = d.match(/^'([^']*)'/)![1];
-    else skipped.push(`${table}.${col} = ${d}`);
-  }
+  for (const raw of body.split('\n')) readColumn(table, raw, cols);
   if (Object.keys(cols).length) tables[table] = cols;
+}
+
+// Columns added later: `alter table public.x add column y ... default z`.
+for (const m of sql.matchAll(/alter table public\.(\w+)\s+(add column[\s\S]*?);/g)) {
+  const [, table, body] = m;
+  const cols: Record<string, Value> = {};
+  for (const part of body.split(/\badd column\s+/).slice(1)) readColumn(table, part.replace(/\s+/g, ' '), cols);
+  if (Object.keys(cols).length) tables[table] = { ...tables[table], ...cols };
 }
 
 const body = JSON.stringify(tables, null, 2).replace(/\{\s*"now": true\s*\}/g, 'NOW');

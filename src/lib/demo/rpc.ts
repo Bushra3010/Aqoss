@@ -64,6 +64,94 @@ export function createRpc(tables: Tables) {
     return money(price * (1 - Number(discount) / 100));
   }
 
+  /** Mirrors `room_night_rate` (migration 17): one room, one night, for its party. */
+  function roomNightRate(roomTypeId: string, date: string, adults: number, children: number): number {
+    const rt = find('room_types', (r) => r.id === roomTypeId);
+    if (!rt) return 0;
+    const o = find('room_prices', (p) => p.room_type_id === roomTypeId && p.stay_date === date);
+    const pick = (...values: unknown[]) => Number(values.find((v) => v !== null && v !== undefined) ?? 0);
+    const a = Math.max(adults || 1, 1);
+    const room =
+      a === 1
+        ? pick(o?.single_price, rt.single_price, o?.price, rt.base_price)
+        : pick(o?.price, rt.base_price);
+    const extras =
+      Math.max(a - 2, 0) * pick(o?.extra_adult_price, rt.extra_adult_price) +
+      Math.max(children || 0, 0) * pick(o?.extra_child_price, rt.extra_child_price);
+    const discount = o?.discount_percent ?? rt.discount_percent ?? 0;
+    return money((room + extras) * (1 - Number(discount) / 100));
+  }
+
+  /** Mirrors `quote_room_stay` (migration 17). */
+  function quoteRoomStay(
+    roomTypeId: string, checkIn: string, checkOut: string, rooms = 1, adults = 1, children = 0,
+  ) {
+    const rt = find('room_types', (r) => r.id === roomTypeId);
+    const nights = eachNight(checkIn, checkOut);
+    if (!rt || !nights.length) return null;
+
+    const r = Math.max(Number(rooms) || 1, 1);
+    const a = Math.max(Number(adults) || 1, 1);
+    const c = Math.max(Number(children) || 0, 0);
+    const day = today();
+    const lead = Math.round(
+      (new Date(`${checkIn}T00:00:00`).getTime() - new Date(`${day}T00:00:00`).getTime()) / 86_400_000,
+    );
+
+    let promotion: Row | null = null;
+    let subtotal = 0;
+    let original = 0;
+
+    const nightlyRates = nights.map((date) => {
+      let base = 0;
+      for (let i = 0; i < r; i++) {
+        base += roomNightRate(
+          roomTypeId,
+          date,
+          Math.max(Math.floor(a / r) + (i < a % r ? 1 : 0), 1),
+          Math.floor(c / r) + (i < c % r ? 1 : 0),
+        );
+      }
+
+      const best = filter(
+        'promotions',
+        (p) =>
+          p.hotel_id === rt.hotel_id &&
+          p.is_active &&
+          (!p.room_type_ids?.length || p.room_type_ids.includes(roomTypeId)) &&
+          (!p.stay_from || date >= p.stay_from) &&
+          (!p.stay_until || date <= p.stay_until) &&
+          (!p.book_from || day >= p.book_from) &&
+          (!p.book_until || day <= p.book_until) &&
+          (p.kind === 'LAST_MINUTE'
+            ? lead <= Number(p.max_days_before)
+            : p.kind === 'EARLY_BIRD'
+              ? lead >= Number(p.min_days_before)
+              : p.kind === 'LONG_STAY'
+                ? nights.length >= Number(p.min_nights)
+                : true),
+      ).sort(
+        (x, y) => Number(y.discount_percent) - Number(x.discount_percent) || (x.created_at < y.created_at ? -1 : 1),
+      )[0];
+
+      base = money(base);
+      const price = best ? money(base * (1 - Number(best.discount_percent) / 100)) : base;
+      if (best && (!promotion || Number(promotion.discount_percent) < Number(best.discount_percent))) {
+        promotion = { id: best.id, title: best.title, kind: best.kind, discount_percent: Number(best.discount_percent) };
+      }
+      subtotal += price;
+      original += base;
+      return { date, price, base_price: base, promotion: best?.title ?? null };
+    });
+
+    return {
+      nightly_rates: nightlyRates,
+      subtotal: money(subtotal),
+      original_subtotal: money(original),
+      promotion,
+    };
+  }
+
   function releaseExpiredHolds(): number {
     const nowIso = new Date().toISOString();
     let n = 0;
@@ -133,6 +221,12 @@ export function createRpc(tables: Tables) {
 
     nightly_rate: ({ p_room_type_id, p_date }: any) => nightlyRate(p_room_type_id, p_date),
 
+    room_night_rate: ({ p_room_type_id, p_date, p_adults, p_children }: any) =>
+      roomNightRate(p_room_type_id, p_date, p_adults, p_children),
+
+    quote_room_stay: ({ p_room_type_id, p_check_in, p_check_out, p_rooms = 1, p_adults = 1, p_children = 0 }: any) =>
+      quoteRoomStay(p_room_type_id, p_check_in, p_check_out, p_rooms, p_adults, p_children),
+
     next_invoice_number: () =>
       `INV-${new Date().getFullYear()}-${String(++counters.invoice).padStart(6, '0')}`,
 
@@ -167,9 +261,9 @@ export function createRpc(tables: Tables) {
         .sort((a, b) => a.sort_order - b.sort_order || a.base_price - b.base_price)
         .map((rt) => {
           const { free, allOnSale } = freeAcross(rt.id, p_check_in, p_check_out);
-          const nightlyRates = nights.map((date) => ({ date, price: nightlyRate(rt.id, date) }));
-          const perRoom = nightlyRates.reduce((s, n) => s + n.price, 0);
-          const subtotal = money(perRoom * roomsWanted);
+          const quote = quoteRoomStay(rt.id, p_check_in, p_check_out, roomsWanted, adults, children)!;
+          const nightlyRates = quote.nightly_rates;
+          const subtotal = quote.subtotal;
           const taxPercent = Number(rt.tax_percent ?? hotel.tax_percent);
 
           return {
@@ -374,6 +468,8 @@ export function createRpc(tables: Tables) {
         amount_refunded: 0,
         price_breakdown: p_pricing ?? {},
         source: p_source ?? 'WEBSITE',
+        // the `bookings_set_commission` trigger (migration 17)
+        commission_percent: Number(find('hotels', (h) => h.id === p_hotel_id)?.commission_percent ?? 0),
         cancellation_reason: null,
         cancelled_at: null,
         checked_in_at: null,

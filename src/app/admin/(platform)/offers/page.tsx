@@ -4,7 +4,7 @@ import { NoAccess } from '@/components/admin/shared';
 import { OffersView } from '@/components/admin/views/OffersView';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Offers & coupons · AQOSS CRM' };
+export const metadata: Metadata = { title: 'Offers & promotions · AQOSS CRM' };
 
 /** Offers and coupons (PRD §30). */
 export default async function OffersPage() {

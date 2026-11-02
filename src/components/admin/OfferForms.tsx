@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Alert, Field } from '@/components/ui';
-import { saveCoupon, saveOffer, type OfferActionState } from '@/app/admin/offer-actions';
+import { saveCoupon, saveOffer, savePromotion, type OfferActionState } from '@/app/admin/offer-actions';
 import { cn } from '@/lib/utils';
 
 export interface HotelOption {
@@ -178,6 +178,124 @@ export function CouponForm({ choice, returnTo }: { choice: HotelChoice; returnTo
 }
 
 // ---------------------------------------------------------------------------
+
+export type PromotionKindKey = 'BASIC' | 'LAST_MINUTE' | 'LONG_STAY' | 'EARLY_BIRD';
+
+const PROMOTION_TITLES: Record<PromotionKindKey, string> = {
+  BASIC: 'Special rate',
+  LAST_MINUTE: 'Last-minute deal',
+  LONG_STAY: 'Stay longer, save more',
+  EARLY_BIRD: 'Early bird saver',
+};
+
+/**
+ * A promotion for one hotel. The discount is taken off the room rate on its
+ * own whenever the rule for its kind holds; only the best one applies per night.
+ */
+export function PromotionForm({
+  hotel,
+  kind,
+  roomTypes,
+  returnTo,
+}: {
+  hotel: HotelOption;
+  kind: PromotionKindKey;
+  roomTypes: { id: string; name: string }[];
+  returnTo: string;
+}) {
+  const [state, action] = useFormState<OfferActionState, FormData>(savePromotion, {});
+  const [allRooms, setAllRooms] = useState(true);
+  const err = (name: string) => state.fieldErrors?.[name];
+
+  return (
+    <form action={action} className="space-y-6" noValidate>
+      <input type="hidden" name="return_to" value={returnTo} />
+      <input type="hidden" name="hotel_id" value={hotel.id} />
+      <input type="hidden" name="kind" value={kind} />
+      {state.error ? <Alert>{state.error}</Alert> : null}
+
+      <Section title="Promotion" hint={`For ${hotel.name}. Guests see the discounted price on the website and at checkout.`}>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <Field label="Name" htmlFor="title" error={err('title')} hint="Shown to guests beside the price.">
+              <input id="title" name="title" className="input" defaultValue={PROMOTION_TITLES[kind]} maxLength={120} />
+            </Field>
+          </div>
+          <Field label="Discount (%)" htmlFor="discount_percent" error={err('discount_percent')} hint="Off the room rate, before tax.">
+            <input id="discount_percent" name="discount_percent" type="number" min={1} max={90} step="0.01" className="input" placeholder="10" />
+          </Field>
+        </div>
+
+        {kind === 'LAST_MINUTE' ? (
+          <div className="mt-4 max-w-xs">
+            <Field label="Check-in within (days of booking)" htmlFor="max_days_before" error={err('max_days_before')} hint="0 = same-day bookings only.">
+              <input id="max_days_before" name="max_days_before" type="number" min={0} max={60} defaultValue={3} className="input" />
+            </Field>
+          </div>
+        ) : null}
+        {kind === 'LONG_STAY' ? (
+          <div className="mt-4 max-w-xs">
+            <Field label="Minimum nights" htmlFor="min_nights" error={err('min_nights')}>
+              <input id="min_nights" name="min_nights" type="number" min={2} max={365} defaultValue={3} className="input" />
+            </Field>
+          </div>
+        ) : null}
+        {kind === 'EARLY_BIRD' ? (
+          <div className="mt-4 max-w-xs">
+            <Field label="Booked at least (days before check-in)" htmlFor="min_days_before" error={err('min_days_before')}>
+              <input id="min_days_before" name="min_days_before" type="number" min={1} max={730} defaultValue={30} className="input" />
+            </Field>
+          </div>
+        ) : null}
+      </Section>
+
+      <Section title="Rooms">
+        <div className="flex flex-wrap gap-2">
+          <ScopeOption checked={allRooms} onChange={() => setAllRooms(true)} label="All rooms" />
+          <ScopeOption checked={!allRooms} onChange={() => setAllRooms(false)} label="Selected rooms" />
+        </div>
+        {!allRooms ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {roomTypes.map((rt) => (
+              <label key={rt.id} className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="room_type_ids" value={rt.id} className="h-4 w-4 rounded border-slate-300" />
+                {rt.name}
+              </label>
+            ))}
+          </div>
+        ) : null}
+      </Section>
+
+      <Section title="Dates" hint="Leave blank for no limit.">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Stay from" htmlFor="stay_from" error={err('stay_from')}>
+            <input id="stay_from" name="stay_from" type="date" className="input" />
+          </Field>
+          <Field label="Stay until" htmlFor="stay_until" error={err('stay_until')} hint="Last night discounted.">
+            <input id="stay_until" name="stay_until" type="date" className="input" />
+          </Field>
+          <Field label="Book from" htmlFor="book_from" error={err('book_from')}>
+            <input id="book_from" name="book_from" type="date" className="input" />
+          </Field>
+          <Field label="Book until" htmlFor="book_until" error={err('book_until')}>
+            <input id="book_until" name="book_until" type="date" className="input" />
+          </Field>
+        </div>
+        <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" name="is_active" defaultChecked className="h-4 w-4 rounded border-slate-300" />
+          Active now
+        </label>
+      </Section>
+
+      <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        Promotions don&apos;t add up: on each night the guest gets the single best one that applies. A coupon code can
+        still be used on top.
+      </p>
+
+      <Actions label="Create promotion" cancelHref={returnTo} />
+    </form>
+  );
+}
 
 function DiscountFields({ err }: { err: (name: string) => string | undefined }) {
   const [kind, setKind] = useState<'PERCENT' | 'AMOUNT'>('PERCENT');

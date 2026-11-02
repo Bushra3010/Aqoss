@@ -3,6 +3,7 @@ import 'server-only';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/api';
 import { env } from '@/lib/env';
+import { money } from '@/lib/utils';
 import type { AvailabilityResult, AvailabilitySearch, BookingHold } from '@/types';
 
 /**
@@ -39,8 +40,18 @@ export async function searchAvailability(
     nightly_rates: (row.nightly_rates ?? []).map((n) => ({
       date: n.date,
       price: Number(n.price),
+      base_price: Number(n.base_price ?? n.price),
+      promotion: n.promotion ?? null,
     })),
-  }));
+  })).map((row) => {
+    const original = money(row.nightly_rates.reduce((s, n) => s + (n.base_price ?? n.price), 0));
+    return {
+      ...row,
+      original_subtotal: original,
+      original_total_price: money(original * (1 + row.tax_percent / 100)),
+      promotion: row.nightly_rates.find((n) => n.promotion)?.promotion ?? null,
+    };
+  });
 }
 
 /** Find one room type in a search result, or explain why it cannot be booked. */

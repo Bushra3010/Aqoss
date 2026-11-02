@@ -171,7 +171,7 @@ export function buildDataset(options: DatasetOptions): Tables {
     bookings: [], booking_rooms: [], booking_guests: [], booking_status_history: [],
     payments: [], refunds: [], invoices: [],
     transport_services: [], transport_routes: [], transport_slots: [], transport_bookings: [],
-    offers: [], coupons: [], coupon_redemptions: [],
+    offers: [], coupons: [], coupon_redemptions: [], promotions: [], property_payouts: [],
     reviews: [], review_images: [], booking_leads: [], demo_requests: [], hotel_registrations: [],
     notification_templates: [], notifications: [], notification_logs: [], otp_codes: [],
     audit_logs: [], platform_settings: [],
@@ -214,6 +214,7 @@ function seedRbac(t: Tables) {
     ['leads.read', 'leads', 'read'], ['leads.write', 'leads', 'write'],
     ['demo_requests.read', 'demo_requests', 'read'], ['demo_requests.write', 'demo_requests', 'write'],
     ['hotel_registrations.read', 'hotel_registrations', 'read'], ['hotel_registrations.write', 'hotel_registrations', 'write'],
+    ['payouts.write', 'payouts', 'write'],
   ];
 
   for (const [key, module, action] of permissionKeys) {
@@ -253,7 +254,7 @@ function seedRbac(t: Tables) {
     ],
     finance_staff: [
       'dashboard.read', 'payments.read', 'payments.write', 'payments.refund', 'bookings.read',
-      'customers.read', 'reports.read', 'hotels.read',
+      'customers.read', 'reports.read', 'hotels.read', 'payouts.write',
     ],
     // Only modules whose pages and actions honour hotel scope, so a login
     // limited to one property never sees another's customers or logs.
@@ -375,6 +376,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
     check_in_time: '14:00:00', check_out_time: '11:00:00',
     currency: 'INR', timezone: 'Asia/Kolkata',
     tax_percent: basePrice >= 7500 ? 18 : 12,
+    commission_percent: 15,
     highlights: [
       'Free Wi-Fi throughout the property',
       'Complimentary breakfast on select rates',
@@ -455,6 +457,7 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
       max_adults: tpl.adults, max_children: tpl.children, max_occupancy: tpl.occupancy,
       extra_bed_allowed: ti > 0, extra_bed_price: 800,
       base_price: price, discount_percent: discount, tax_percent: null,
+      single_price: Math.round((price * 0.85) / 50) * 50, extra_adult_price: 800, extra_child_price: 400,
       cancellation_policy: 'Free cancellation up to 48 hours before check-in.',
       is_refundable: true, is_active: true, sort_order: ti,
       metadata: {}, created_at: now(), updated_at: now(),
@@ -561,6 +564,21 @@ function seedHotel(t: Tables, index: number, options: DatasetOptions) {
       offer_type: 'SEASONAL', discount_percent: null, discount_amount: 800,
       max_discount: null, banner_url: null, valid_from: null, valid_until: isoDate(90),
       is_active: true, sort_order: 1, created_at: now(), updated_at: now(),
+    },
+  );
+
+  t.promotions.push(
+    {
+      id: seedId(), hotel_id: hotelId, kind: 'LONG_STAY', title: 'Stay 3 nights, save 15%',
+      discount_percent: 15, room_type_ids: [], stay_from: null, stay_until: null,
+      book_from: null, book_until: isoDate(180), min_nights: 3, max_days_before: null,
+      min_days_before: null, is_active: true, created_by: null, created_at: now(), updated_at: now(),
+    },
+    {
+      id: seedId(), hotel_id: hotelId, kind: 'LAST_MINUTE', title: 'Last-minute deal',
+      discount_percent: 10, room_type_ids: [], stay_from: null, stay_until: null,
+      book_from: null, book_until: null, min_nights: null, max_days_before: 2,
+      min_days_before: null, is_active: index % 2 === 0, created_by: null, created_at: now(), updated_at: now(),
     },
   );
 

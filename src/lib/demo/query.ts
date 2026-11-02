@@ -128,6 +128,12 @@ function likeToRegExp(pattern: string): RegExp {
 
 /** Parse one PostgREST filter clause, e.g. `hotel_id.eq.abc` or `name.is.null`. */
 function parseClause(clause: string): Filter {
+  // `and(a.eq.1,b.lt.2)` inside an `.or(...)` — every inner clause must match.
+  if (clause.startsWith('and(') && clause.endsWith(')')) {
+    const inner = splitClauses(clause.slice(4, -1)).map(parseClause);
+    return (r) => inner.every((f) => f(r));
+  }
+
   const firstDot = clause.indexOf('.');
   const secondDot = clause.indexOf('.', firstDot + 1);
   const column = clause.slice(0, firstDot);

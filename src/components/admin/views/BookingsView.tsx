@@ -3,10 +3,12 @@ import type { AdminSession } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader, Table, Td } from '@/components/admin/shared';
 import { StatusBadge } from '@/components/ui';
-import { formatCurrency, formatDate, todayISO } from '@/lib/utils';
+import { formatCurrency, formatDate, nightsBetween, todayISO } from '@/lib/utils';
 import { FilterForm } from '@/components/admin/FilterForm';
 import { SearchSelect } from '@/components/admin/SearchSelect';
+import { LinkTabs } from '@/components/admin/LinkTabs';
 import { ilikeTerm } from '@/lib/admin/search-term';
+import { settle } from '@/lib/settlement';
 
 export interface BookingsSearch {
   q?: string;
@@ -16,7 +18,17 @@ export interface BookingsSearch {
   from?: string;
   to?: string;
   filter?: string;
+  tab?: string;
 }
+
+export type BookingsTab = 'all' | 'upcoming' | 'completed' | 'cancelled';
+
+const TABS: { key: BookingsTab; label: string }[] = [
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+  { key: 'all', label: 'All' },
+];
 
 /**
  * Booking list with the filters from PRD §26.
@@ -25,6 +37,9 @@ export interface BookingsSearch {
  * where `hotelId` pins the list to one property and the hotel column and
  * filter disappear. `bookingHref` keeps detail links inside whichever panel
  * the list is shown in.
+ *
+ * Tabs: Upcoming is every live booking whose stay has not ended, Completed is
+ * checked out or past its check-out date, Cancelled includes refunded ones.
  */
 export async function BookingsView({
   session,
@@ -32,6 +47,8 @@ export async function BookingsView({
   hotelId,
   bookingHref,
   newHref,
+  listHref,
+  defaultTab = 'all',
 }: {
   session: AdminSession;
   searchParams: BookingsSearch;
@@ -39,6 +56,9 @@ export async function BookingsView({
   bookingHref: (bookingId: string) => string;
   /** Set when the admin may take bookings. */
   newHref?: string;
+  /** This list's own path, for the tab links. */
+  listHref: string;
+  defaultTab?: BookingsTab;
 }) {
   const supabase = createAdminSupabase();
 
@@ -52,10 +72,23 @@ export async function BookingsView({
   let query = supabase
     .from('bookings')
     .select(
-      'id, reference, guest_name, guest_email, check_in, check_out, status, payment_status, total_amount, amount_paid, currency, created_at, hotels!inner (id, name)',
+      'id, reference, guest_name, guest_email, check_in, check_out, status, payment_status, total_amount, tax_total, amount_paid, amount_refunded, commission_percent, currency, created_at, hotels!inner (id, name, commission_percent)',
     )
-    .order('created_at', { ascending: false })
     .limit(200);
+
+  const tab = (TABS.some((t) => t.key === searchParams.tab) ? searchParams.tab : defaultTab) as BookingsTab;
+  const today = todayISO();
+  if (tab === 'upcoming') {
+    query = query.in('status', ['PENDING', 'CONFIRMED', 'CHECKED_IN']).gte('check_out', today);
+  } else if (tab === 'completed') {
+    query = query.or(`status.eq.CHECKED_OUT,and(status.in.(CONFIRMED,CHECKED_IN),check_out.lt.${today})`);
+  } else if (tab === 'cancelled') {
+    query = query.in('status', ['CANCELLED', 'REFUNDED']);
+  }
+  // Upcoming reads soonest first; the others newest first.
+  query = tab === 'upcoming'
+    ? query.order('check_in', { ascending: true })
+    : query.order('created_at', { ascending: false });
 
   if (session.hotelScope.length) query = query.in('hotel_id', session.hotelScope);
   const hotelFilter = hotelId ?? searchParams.hotel;
@@ -73,6 +106,16 @@ export async function BookingsView({
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const bookings = (data ?? []) as any[];
 
+  // Tab links keep every other filter.
+  const tabHref = (key: BookingsTab) => {
+    const params = new URLSearchParams(
+      Object.entries(searchParams).filter(([k, v]) => k !== 'tab' && typeof v === 'string' && v) as [string, string][],
+    );
+    if (key !== defaultTab) params.set('tab', key);
+    const qs = params.toString();
+    return qs ? `${listHref}?${qs}` : listHref;
+  };
+
   return (
     <>
       <PageHeader
@@ -81,7 +124,14 @@ export async function BookingsView({
         action={newHref ? <Link href={newHref} className="btn-primary">+ New booking</Link> : null}
       />
 
+      <LinkTabs
+        label="Booking lists"
+        active={tab}
+        tabs={TABS.map((t) => ({ key: t.key, label: t.label, href: tabHref(t.key) }))}
+      />
+
       <FilterForm className={`mb-4 grid gap-2 sm:grid-cols-3 ${hotelId ? 'lg:grid-cols-5' : 'lg:grid-cols-6'}`}>
+        {tab !== defaultTab ? <input type="hidden" name="tab" value={tab} /> : null}
         <input name="q" className="input" placeholder="Reference, name or email" defaultValue={searchParams.q ?? ''} />
 
         {hotelId ? null : (
@@ -118,24 +168,27 @@ export async function BookingsView({
 
       <Table
         headers={[
-          'Reference',
-          'Guest',
+          'Booking ID',
+          'Guest name',
           ...(hotelId ? [] : ['Hotel']),
-          'Stay',
-          'Status',
-          'Payment',
-          { label: 'Total', align: 'right' as const },
+          'Stay duration',
+          { label: 'Booking amount', align: 'right' as const },
+          { label: 'Payable to property', align: 'right' as const },
+          'Payment status',
         ]}
         empty="No bookings match this filter."
       >
         {bookings.map((b) => {
           const hotel = Array.isArray(b.hotels) ? b.hotels[0] : b.hotels;
+          const nights = nightsBetween(b.check_in, b.check_out);
+          const { payable, commission, commissionPercent } = settle(b, hotel?.commission_percent);
           return (
             <tr key={b.id}>
               <Td>
                 <Link href={bookingHref(b.id)} className="whitespace-nowrap font-medium text-slate-900 hover:underline">
                   {b.reference}
                 </Link>
+                <div className="mt-1"><StatusBadge status={b.status} /></div>
               </Td>
               <Td>
                 {b.guest_name}
@@ -144,19 +197,27 @@ export async function BookingsView({
               {hotelId ? null : <Td>{hotel?.name}</Td>}
               <Td className="whitespace-nowrap">
                 {formatDate(b.check_in)} → {formatDate(b.check_out)}
+                <p className="text-xs text-slate-400">{nights} night{nights === 1 ? '' : 's'}</p>
               </Td>
-              <Td><StatusBadge status={b.status} /></Td>
-              <Td><StatusBadge status={b.payment_status} /></Td>
               <Td align="right">
                 <span className="font-medium text-slate-900">
                   {formatCurrency(Number(b.total_amount), b.currency)}
                 </span>
-                {Number(b.amount_paid) < Number(b.total_amount) ? (
+                {Number(b.amount_paid) - Number(b.amount_refunded) < Number(b.total_amount) ? (
                   <p className="text-xs text-amber-600">
-                    {formatCurrency(Number(b.amount_paid), b.currency)} paid
+                    {formatCurrency(Number(b.amount_paid) - Number(b.amount_refunded), b.currency)} paid
                   </p>
                 ) : null}
               </Td>
+              <Td align="right">
+                <span className="font-medium text-slate-900">{formatCurrency(payable, b.currency)}</span>
+                {commission > 0 ? (
+                  <p className="text-xs text-slate-400">
+                    after {commissionPercent}% commission
+                  </p>
+                ) : null}
+              </Td>
+              <Td><StatusBadge status={b.payment_status} /></Td>
             </tr>
           );
         })}

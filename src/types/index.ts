@@ -147,7 +147,30 @@ export interface RoomTypeSummary {
 
 export interface NightlyRate {
   date: string;
+  /** What is charged, after any promotion. */
   price: number;
+  /** Before the promotion (occupancy rate). */
+  base_price?: number;
+  /** Title of the promotion applied that night, if any. */
+  promotion?: string | null;
+}
+
+/** A promotion that lowered a quote (migration 17). */
+export interface AppliedPromotion {
+  id: string;
+  title: string;
+  kind: PromotionKind;
+  discount_percent: number;
+}
+
+export type PromotionKind = 'BASIC' | 'LAST_MINUTE' | 'LONG_STAY' | 'EARLY_BIRD';
+
+/** One booking line priced by `quote_room_stay`; every figure covers all its rooms. */
+export interface RoomStayQuote {
+  nightly_rates: NightlyRate[];
+  subtotal: number;
+  original_subtotal: number;
+  promotion: AppliedPromotion | null;
 }
 
 /** One row returned by the `search_availability` database function. */
@@ -165,6 +188,12 @@ export interface AvailabilityResult {
   nights: number;
   nightly_rates: NightlyRate[];
   room_subtotal: number;
+  /** room_subtotal before promotions; equal when none applies. */
+  original_subtotal: number;
+  /** total_price before promotions, tax included. */
+  original_total_price: number;
+  /** Promotion title, when one lowered the price. */
+  promotion: string | null;
   tax_percent: number;
   tax_amount: number;
   total_price: number;
@@ -190,7 +219,9 @@ export interface PriceBreakdown {
   room_subtotal: number;
   extra_services_total: number;
   transport_total: number;
+  /** Promotions plus coupon. */
   discount_total: number;
+  promotion_discount?: number;
   coupon_code: string | null;
   coupon_discount: number;
   taxable_amount: number;

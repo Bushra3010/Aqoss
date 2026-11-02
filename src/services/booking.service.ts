@@ -7,12 +7,12 @@ import { queueBookingNotifications } from '@/services/notification.service';
 import { createInvoice } from '@/services/invoice.service';
 import { recordAudit } from '@/services/audit.service';
 import type {
-  AvailabilityResult,
   Booking,
   BookingRoomRequest,
   CreateBookingRequest,
   GuestDetails,
   PriceBreakdown,
+  RoomStayQuote,
 } from '@/types';
 
 /**
@@ -32,7 +32,7 @@ export async function createBooking(
   const supabase = createAdminSupabase();
 
   // 1. Re-price server-side. Never trust totals sent by the browser.
-  const { breakdown, availability, transportLines } = await quoteBooking({
+  const { breakdown, roomQuotes, transportLines } = await quoteBooking({
     hotelId: request.hotelId,
     checkIn: request.checkIn,
     checkOut: request.checkOut,
@@ -43,7 +43,7 @@ export async function createBooking(
   });
 
   // 2. Attach the per-line detail the transaction stores as a snapshot.
-  const roomPayload = roomLines(request.rooms, breakdown, availability);
+  const roomPayload = roomLines(request.rooms, breakdown, roomQuotes);
 
   const transportPayload = transportLines.map((t) => ({
     slot_id: t.slot_id,
@@ -175,7 +175,7 @@ export async function getBookingDetail(bookingId: string) {
     .select(
       `*,
        hotels!inner (id, name, slug, phone, email, address_line1, city, state, postal_code,
-                     check_in_time, check_out_time, currency),
+                     check_in_time, check_out_time, currency, commission_percent),
        booking_rooms (*),
        booking_guests (*),
        payments (id, amount, status, provider, provider_payment_id, method, paid_at),
@@ -251,11 +251,10 @@ export async function setBookingStatus(input: {
  * discount and tax, pro rata to its room subtotal. Shared by checkout and
  * staff changes so a booking is split the same way however it was made.
  */
-function roomLines(rooms: BookingRoomRequest[], breakdown: PriceBreakdown, availability: AvailabilityResult[]) {
-  return rooms.map((room) => {
-    const match = availability.find((a) => a.room_type_id === room.room_type_id)!;
-    const perRoom = match.nightly_rates.reduce((s, n) => s + n.price, 0);
-    const subtotal = Math.round(perRoom * room.rooms * 100) / 100;
+function roomLines(rooms: BookingRoomRequest[], breakdown: PriceBreakdown, roomQuotes: RoomStayQuote[]) {
+  return rooms.map((room, i) => {
+    const quote = roomQuotes[i];
+    const subtotal = quote.original_subtotal;
     const share = breakdown.room_subtotal > 0 ? subtotal / breakdown.room_subtotal : 0;
 
     return {
@@ -263,7 +262,7 @@ function roomLines(rooms: BookingRoomRequest[], breakdown: PriceBreakdown, avail
       rooms: room.rooms,
       adults: room.adults,
       children: room.children,
-      nightly_rates: match.nightly_rates,
+      nightly_rates: quote.nightly_rates,
       subtotal,
       discount: Math.round(breakdown.discount_total * share * 100) / 100,
       tax: Math.round(breakdown.tax_total * share * 100) / 100,
@@ -393,7 +392,7 @@ export async function quoteModification(input: {
       : quote.breakdown.lines,
   };
 
-  return { current, breakdown, availability: quote.availability, couponDropped };
+  return { current, breakdown, roomQuotes: quote.roomQuotes, couponDropped };
 }
 
 /** Change an existing booking's dates, rooms or party size — atomically. */
@@ -404,13 +403,13 @@ export async function modifyBooking(input: {
   rooms: BookingRoomRequest[];
   actorId: string;
 }): Promise<{ booking: Booking; couponDropped: string | null }> {
-  const { current, breakdown, availability, couponDropped } = await quoteModification(input);
+  const { current, breakdown, roomQuotes, couponDropped } = await quoteModification(input);
 
   const { data, error } = await createAdminSupabase().rpc('modify_booking', {
     p_booking_id: current.id,
     p_check_in: input.checkIn,
     p_check_out: input.checkOut,
-    p_rooms: roomLines(input.rooms, breakdown, availability),
+    p_rooms: roomLines(input.rooms, breakdown, roomQuotes),
     p_guest: {
       adults: input.rooms.reduce((s, r) => s + r.adults, 0),
       children: input.rooms.reduce((s, r) => s + r.children, 0),

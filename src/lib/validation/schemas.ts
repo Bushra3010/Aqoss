@@ -151,6 +151,10 @@ export const roomTypeSchema = z
       .min(1, 'Set a nightly price.')
       .max(10_000_000),
     discount_percent: z.coerce.number({ invalid_type_error: 'Enter a percentage.' }).min(0).max(90, 'At most 90%.').default(0),
+    /** Blank = the 2-adult price. */
+    single_price: z.coerce.number({ invalid_type_error: 'Enter a price.' }).min(0).max(10_000_000).nullish(),
+    extra_adult_price: z.coerce.number({ invalid_type_error: 'Enter a price.' }).min(0).max(10_000_000).default(0),
+    extra_child_price: z.coerce.number({ invalid_type_error: 'Enter a price.' }).min(0).max(10_000_000).default(0),
     physical_rooms: whole('Enter how many rooms.').min(1, 'A room type needs at least one room.').max(500),
     amenities: z.string().trim().max(1000).nullish(),
     is_refundable: z.coerce.boolean().default(false),
@@ -198,6 +202,47 @@ export const offerFormSchema = z
     ...discountFields,
   })
   .superRefine(discountRules);
+
+/**
+ * A promotion (migration 17): a percentage off the room rate that applies on
+ * its own when its rule holds. Each kind needs its one rule field.
+ */
+export const promotionFormSchema = z
+  .object({
+    kind: z.enum(['BASIC', 'LAST_MINUTE', 'LONG_STAY', 'EARLY_BIRD'], { required_error: 'Choose a kind of promotion.' }),
+    title: z.string({ required_error: 'Give the promotion a name.' }).trim().min(3, 'Give the promotion a name.').max(120),
+    hotel_id: z.string().uuid(),
+    discount_percent: z.coerce
+      .number({ required_error: 'Enter the discount.', invalid_type_error: 'Enter the discount.' })
+      .gt(0, 'Enter the discount.')
+      .max(90, 'At most 90%.'),
+    room_type_ids: z.array(z.string().uuid()).max(100).default([]),
+    stay_from: isoDate.nullish(),
+    stay_until: isoDate.nullish(),
+    book_from: isoDate.nullish(),
+    book_until: isoDate.nullish(),
+    min_nights: z.coerce.number({ invalid_type_error: 'Enter a number.' }).int().min(2, 'At least 2 nights.').max(365).nullish(),
+    max_days_before: z.coerce.number({ invalid_type_error: 'Enter a number.' }).int().min(0).max(60).nullish(),
+    min_days_before: z.coerce.number({ invalid_type_error: 'Enter a number.' }).int().min(1, 'At least 1 day.').max(730).nullish(),
+    is_active: z.coerce.boolean().default(false),
+  })
+  .superRefine((v, ctx) => {
+    if (v.kind === 'LONG_STAY' && v.min_nights == null) {
+      ctx.addIssue({ code: 'custom', path: ['min_nights'], message: 'How many nights make a long stay?' });
+    }
+    if (v.kind === 'LAST_MINUTE' && v.max_days_before == null) {
+      ctx.addIssue({ code: 'custom', path: ['max_days_before'], message: 'How close to check-in?' });
+    }
+    if (v.kind === 'EARLY_BIRD' && v.min_days_before == null) {
+      ctx.addIssue({ code: 'custom', path: ['min_days_before'], message: 'How far ahead?' });
+    }
+    if (v.stay_from && v.stay_until && v.stay_until < v.stay_from) {
+      ctx.addIssue({ code: 'custom', path: ['stay_until'], message: 'Must be on or after the start.' });
+    }
+    if (v.book_from && v.book_until && v.book_until < v.book_from) {
+      ctx.addIssue({ code: 'custom', path: ['book_until'], message: 'Must be on or after the start.' });
+    }
+  });
 
 /** A code guests type at checkout. No hotels = valid at every hotel. */
 export const couponFormSchema = z
@@ -306,6 +351,10 @@ export const inventorySchema = z.object({
   from: isoDate,
   to: isoDate,
   total_rooms: z.coerce.number().int().min(0).max(999).optional(),
+  /** The 2-adult rate. */
   price: z.coerce.number().min(0).optional(),
+  single_price: z.coerce.number().min(0).optional(),
+  extra_adult_price: z.coerce.number().min(0).optional(),
+  extra_child_price: z.coerce.number().min(0).optional(),
   is_closed: z.boolean().optional(),
 });

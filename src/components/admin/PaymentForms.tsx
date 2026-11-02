@@ -6,11 +6,12 @@ import { Search } from 'lucide-react';
 import { Alert, Field, StatusBadge } from '@/components/ui';
 import { RecordPaymentForm } from '@/components/admin/BookingForms';
 import {
+  recordPayoutAction,
   refundFromPaymentAction,
   searchBookingsForPayment,
   type PaymentFormState,
 } from '@/app/admin/payment-actions';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, todayISO } from '@/lib/utils';
 
 /** Refund part or all of one payment. */
 export function RefundFromPaymentForm({
@@ -45,6 +46,43 @@ export function RefundFromPaymentForm({
         A refund doesn&apos;t lower the booking&apos;s price; for a shorter stay, edit the booking first.
       </p>
       <Submit label="Refund" />
+    </form>
+  );
+}
+
+/** AQOSS paying a hotel its share of one booking. */
+export function RecordPayoutForm({
+  bookingId,
+  hotelId,
+  outstanding,
+  currency,
+}: {
+  bookingId: string;
+  hotelId: string;
+  outstanding: number;
+  currency: string;
+}) {
+  const [state, action] = useFormState<PaymentFormState, FormData>(recordPayoutAction, {});
+
+  return (
+    <form action={action} className="space-y-3" noValidate>
+      <input type="hidden" name="booking_id" value={bookingId} />
+      <input type="hidden" name="hotel_id" value={hotelId} />
+      {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.success ? <Alert tone="success">{state.success}</Alert> : null}
+      <Field label={`Amount paid (up to ${formatCurrency(outstanding, currency)})`} htmlFor="payout-amount">
+        <input id="payout-amount" name="amount" type="number" min={1} max={outstanding} step="0.01" defaultValue={outstanding} className="input" />
+      </Field>
+      <Field label="Paid on" htmlFor="payout-date">
+        <input id="payout-date" name="paid_on" type="date" defaultValue={todayISO()} className="input" />
+      </Field>
+      <Field label="UTR / reference" htmlFor="payout-reference" hint="The bank transfer's reference, so the hotel can match it">
+        <input id="payout-reference" name="reference" className="input" maxLength={120} />
+      </Field>
+      <Field label="Notes" htmlFor="payout-notes">
+        <input id="payout-notes" name="notes" className="input" maxLength={300} />
+      </Field>
+      <Submit label="Record payout" />
     </form>
   );
 }

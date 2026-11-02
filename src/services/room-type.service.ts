@@ -27,6 +27,9 @@ export interface RoomTypeRecord {
   max_occupancy: number;
   base_price: number;
   discount_percent: number;
+  single_price: number | null;
+  extra_adult_price: number;
+  extra_child_price: number;
   is_refundable: boolean;
   is_active: boolean;
   physical_rooms: number;
@@ -37,7 +40,7 @@ export async function getRoomType(roomTypeId: string): Promise<RoomTypeRecord | 
   const { data } = await createAdminSupabase()
     .from('room_types')
     .select(
-      'id, hotel_id, name, slug, description, bed_type, room_size_sqft, max_adults, max_children, max_occupancy, base_price, discount_percent, is_refundable, is_active, rooms (id), room_amenities (name, sort_order)',
+      'id, hotel_id, name, slug, description, bed_type, room_size_sqft, max_adults, max_children, max_occupancy, base_price, discount_percent, single_price, extra_adult_price, extra_child_price, is_refundable, is_active, rooms (id), room_amenities (name, sort_order)',
     )
     .eq('id', roomTypeId)
     .maybeSingle();
@@ -49,6 +52,9 @@ export async function getRoomType(roomTypeId: string): Promise<RoomTypeRecord | 
     ...row,
     base_price: Number(row.base_price),
     discount_percent: Number(row.discount_percent),
+    single_price: row.single_price == null ? null : Number(row.single_price),
+    extra_adult_price: Number(row.extra_adult_price ?? 0),
+    extra_child_price: Number(row.extra_child_price ?? 0),
     physical_rooms: row.rooms?.length ?? 0,
     amenities: ((row.room_amenities ?? []) as any[])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -153,6 +159,9 @@ function detailColumns(data: RoomTypeInput) {
     max_occupancy: data.max_occupancy,
     base_price: data.base_price,
     discount_percent: data.discount_percent,
+    single_price: data.single_price ?? null,
+    extra_adult_price: data.extra_adult_price,
+    extra_child_price: data.extra_child_price,
     is_refundable: data.is_refundable,
     is_active: data.is_active,
   };

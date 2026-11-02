@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { can } from '@/lib/auth/session';
 import { getHotelPanel, hotelPanelPath } from '@/lib/admin/hotel-panel';
 import { NoAccess } from '@/components/admin/shared';
-import { PaymentsView, type PaymentsSearch } from '@/components/admin/views/PaymentsView';
+import { PaymentsTabs } from '@/components/admin/PaymentsTabs';
+import { SettlementView, type SettlementSearch } from '@/components/admin/views/SettlementView';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Payments · Hotel admin' };
@@ -13,7 +14,7 @@ export default async function HotelPaymentsPage({
   searchParams,
 }: {
   params: { hotel: string };
-  searchParams: PaymentsSearch;
+  searchParams: SettlementSearch;
 }) {
   const panel = await getHotelPanel(params.hotel);
   if (!panel) notFound();
@@ -21,14 +22,17 @@ export default async function HotelPaymentsPage({
 
   const { hotel } = panel;
   return (
-    <PaymentsView
-      session={panel.session}
-      searchParams={searchParams}
+    <SettlementView
       hotelId={hotel.id}
+      searchParams={searchParams}
+      listHref={hotelPanelPath(hotel.slug, 'payments')}
+      tabs={<PaymentsTabs slug={hotel.slug} active="settlement" />}
       bookingHref={(id) => hotelPanelPath(hotel.slug, `bookings/${id}`)}
-      bookingsHref={hotelPanelPath(hotel.slug, 'bookings')}
-      paymentHref={(id) => hotelPanelPath(hotel.slug, `payments/${id}`)}
-      newHref={can(panel.session, 'payments.write') ? hotelPanelPath(hotel.slug, 'payments/new') : undefined}
+      payoutHref={
+        can(panel.session, 'payouts.write')
+          ? (id) => hotelPanelPath(hotel.slug, `payments/payout/${id}`)
+          : undefined
+      }
     />
   );
 }

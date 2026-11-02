@@ -1,10 +1,19 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { deleteCouponAction, deleteOfferAction, toggleCoupon, toggleOffer } from '@/app/admin/offer-actions';
+import {
+  deleteCouponAction,
+  deleteOfferAction,
+  deletePromotionAction,
+  toggleCoupon,
+  toggleOffer,
+  togglePromotion,
+} from '@/app/admin/offer-actions';
 
-/** Pause or re-activate an offer or coupon from its list row. */
-export function ActiveToggle({ kind, id, active }: { kind: 'offer' | 'coupon'; id: string; active: boolean }) {
+const TOGGLES = { offer: toggleOffer, coupon: toggleCoupon, promotion: togglePromotion };
+
+/** Pause or re-activate an offer, coupon or promotion from its list row. */
+export function ActiveToggle({ kind, id, active }: { kind: keyof typeof TOGGLES; id: string; active: boolean }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +26,7 @@ export function ActiveToggle({ kind, id, active }: { kind: 'offer' | 'coupon'; i
         onClick={() =>
           start(async () => {
             setError(null);
-            const result = await (kind === 'offer' ? toggleOffer : toggleCoupon)(id, !active);
+            const result = await TOGGLES[kind](id, !active);
             if (result.error) setError(result.error);
           })
         }
@@ -79,6 +88,34 @@ export function DeleteOfferButton({ id, title }: { id: string; title: string }) 
           start(async () => {
             setError(null);
             const result = await deleteOfferAction(id);
+            if (result.error) setError(result.error);
+          });
+        }}
+      >
+        {pending ? 'Deleting…' : 'Delete'}
+      </button>
+      {error ? <span className="max-w-[16rem] text-right text-xs text-rose-600" role="alert">{error}</span> : null}
+    </span>
+  );
+}
+
+/** Delete a promotion, after a confirm. Past bookings keep their price. */
+export function DeletePromotionButton({ id, title }: { id: string; title: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <span className="inline-flex flex-col items-end">
+      <button
+        type="button"
+        disabled={pending}
+        aria-label={`Delete promotion ${title}`}
+        className="text-sm font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+        onClick={() => {
+          if (!window.confirm(`Delete the promotion "${title}"? New bookings stop getting it; past bookings keep their price.`)) return;
+          start(async () => {
+            setError(null);
+            const result = await deletePromotionAction(id);
             if (result.error) setError(result.error);
           });
         }}

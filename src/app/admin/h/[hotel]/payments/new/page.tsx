@@ -17,7 +17,7 @@ export default async function HotelRecordPaymentPage({ params }: { params: { hot
   return (
     <>
       <PageHeader title="Record payment" description={`Money taken at ${hotel.name} against a booking that still owes.`} />
-      <RecordPaymentPicker hotelId={hotel.id} returnBase={hotelPanelPath(hotel.slug, 'payments')} />
+      <RecordPaymentPicker hotelId={hotel.id} returnBase={hotelPanelPath(hotel.slug, 'payments/received')} />
     </>
   );
 }

@@ -16,7 +16,11 @@ function Submit() {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export function HotelForm({ hotel }: { hotel?: any }) {
+/**
+ * `canSetCommission` shows AQOSS's commission; only an all-hotels admin with
+ * `payouts.write` gets it, and `saveHotel` ignores the field for anyone else.
+ */
+export function HotelForm({ hotel, canSetCommission = false }: { hotel?: any; canSetCommission?: boolean }) {
   const [state, action] = useFormState(saveHotel, initial);
 
   return (
@@ -132,6 +136,11 @@ export function HotelForm({ hotel }: { hotel?: any }) {
           <Field label="Currency" htmlFor="currency">
             <input id="currency" name="currency" className="input" maxLength={3} defaultValue={hotel?.currency ?? 'INR'} />
           </Field>
+          {canSetCommission ? (
+            <Field label="AQOSS commission %" htmlFor="commission_percent" hint="Of each booking before tax. New bookings keep the rate they were made at.">
+              <input id="commission_percent" name="commission_percent" type="number" step="0.01" min="0" max="100" className="input" defaultValue={hotel?.commission_percent ?? 0} />
+            </Field>
+          ) : null}
         </div>
       </section>
 

@@ -20,15 +20,15 @@ export const dynamic = 'force-dynamic';
  * since a layout is not re-run on every client navigation.
  */
 const HOTEL_NAV: (Omit<NavItem, 'href'> & { path: string; permission: string })[] = [
-  { path: '', label: 'Overview', icon: 'dashboard', permission: 'dashboard.read', exact: true },
+  { path: '', label: 'Dashboard', icon: 'dashboard', permission: 'dashboard.read', exact: true },
   { path: 'bookings', label: 'Bookings', icon: 'bookings', permission: 'bookings.read' },
+  { path: 'pricing', label: 'Rate & Inventory', icon: 'pricing', permission: 'inventory.read' },
+  { path: 'payments', label: 'Payments', icon: 'payments', permission: 'payments.read' },
+  { path: 'offers', label: 'Offers & Promotions', icon: 'offers', permission: 'offers.read' },
   { path: 'leads', label: 'Leads', icon: 'leads', permission: 'leads.read' },
-  { path: 'pricing', label: 'Pricing & Availability', icon: 'pricing', permission: 'inventory.read' },
   { path: 'rooms', label: 'Rooms', icon: 'rooms', permission: 'rooms.read' },
   { path: 'images', label: 'Photos', icon: 'images', permission: 'hotels.read' },
-  { path: 'offers', label: 'Offers & Coupons', icon: 'offers', permission: 'offers.read' },
   { path: 'reviews', label: 'Reviews', icon: 'reviews', permission: 'reviews.read' },
-  { path: 'payments', label: 'Payments', icon: 'payments', permission: 'payments.read' },
   { path: 'website', label: 'Website', icon: 'websites', permission: 'websites.read' },
   { path: 'details', label: 'Hotel details', icon: 'settings', permission: 'hotels.read' },
 ];

@@ -25,7 +25,7 @@ export default async function HotelPaymentPage({
       session={panel.session}
       paymentId={params.id}
       hotelId={hotel.id}
-      paymentsHref={hotelPanelPath(hotel.slug, 'payments')}
+      paymentsHref={hotelPanelPath(hotel.slug, 'payments/received')}
       bookingHref={(id) => hotelPanelPath(hotel.slug, `bookings/${id}`)}
       notice={searchParams}
     />

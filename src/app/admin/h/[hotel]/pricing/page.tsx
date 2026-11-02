@@ -6,7 +6,7 @@ import { NoAccess } from '@/components/admin/shared';
 import { InventoryView, type InventorySearch } from '@/components/admin/views/InventoryView';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Pricing & availability · Hotel admin' };
+export const metadata: Metadata = { title: 'Rate & inventory · Hotel admin' };
 
 export default async function HotelPricingPage({
   params,

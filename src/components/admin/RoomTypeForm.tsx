@@ -30,6 +30,9 @@ export interface RoomTypeValues {
   max_occupancy: number;
   base_price: number;
   discount_percent: number;
+  single_price: number | null;
+  extra_adult_price: number;
+  extra_child_price: number;
   is_refundable: boolean;
   is_active: boolean;
   physical_rooms: number;
@@ -331,11 +334,20 @@ export function RoomTypeForm({
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-base font-bold text-slate-900">Price &amp; rooms</h2>
         <p className="text-sm text-slate-500">
-          Opens the room for booking for the next 12 months. Change prices for particular nights in Pricing &amp; Availability.
+          Opens the room for booking for the next 12 months. These are the standard rates; change them for particular nights in Rate &amp; Inventory.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <Field label="Price per night (₹)" htmlFor="base_price" error={err('base_price')}>
+          <Field label="2 Pax — price per night (₹)" htmlFor="base_price" error={err('base_price')} hint="Two adults in the room.">
             <input id="base_price" name="base_price" type="number" min={1} step="1" className="input" defaultValue={roomType?.base_price} placeholder="4500" required />
+          </Field>
+          <Field label="1 Pax (₹)" htmlFor="single_price" error={err('single_price')} hint="One adult. Blank = the 2 Pax price.">
+            <input id="single_price" name="single_price" type="number" min={0} step="1" className="input" defaultValue={roomType?.single_price ?? ''} placeholder="3800" />
+          </Field>
+          <Field label="Extra person (₹)" htmlFor="extra_adult_price" error={err('extra_adult_price')} hint="Each adult over two, per night.">
+            <input id="extra_adult_price" name="extra_adult_price" type="number" min={0} step="1" className="input" defaultValue={roomType?.extra_adult_price ?? 0} />
+          </Field>
+          <Field label="Extra child (₹)" htmlFor="extra_child_price" error={err('extra_child_price')} hint="Each child, per night.">
+            <input id="extra_child_price" name="extra_child_price" type="number" min={0} step="1" className="input" defaultValue={roomType?.extra_child_price ?? 0} />
           </Field>
           <Field label="Discount (%)" htmlFor="discount_percent" error={err('discount_percent')}>
             <input id="discount_percent" name="discount_percent" type="number" min={0} max={90} defaultValue={roomType?.discount_percent ?? 0} className="input" />

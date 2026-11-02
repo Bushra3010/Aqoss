@@ -33,6 +33,7 @@ export async function PaymentsView({
   bookingsHref,
   paymentHref,
   newHref,
+  tabs,
 }: {
   session: AdminSession;
   searchParams: PaymentsSearch;
@@ -44,6 +45,8 @@ export async function PaymentsView({
   paymentHref: (paymentId: string) => string;
   /** Set when the admin may record payments taken at the hotel. */
   newHref?: string;
+  /** Shown under the header, e.g. a hotel panel's Payments tabs. */
+  tabs?: React.ReactNode;
 }) {
   const filters: LedgerFilters = {
     scope: session.hotelScope,
@@ -76,6 +79,7 @@ export async function PaymentsView({
         description="Every payment — online and at the hotel — with refunds against the payment they came from."
         action={newHref ? <Link href={newHref} className="btn-primary">+ Record payment</Link> : null}
       />
+      {tabs}
 
       <div className="mb-5 grid gap-3 sm:gap-4 grid-cols-2 xl:grid-cols-4">
         <StatTile

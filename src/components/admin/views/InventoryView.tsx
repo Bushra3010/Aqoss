@@ -14,8 +14,10 @@ export interface InventorySearch {
 }
 
 /**
- * Availability calendar and bulk editor (PRD §9). `lockedHotelId` pins it to
- * one property for a hotel's own panel and drops the hotel picker.
+ * Rates and inventory per room category (PRD §9): rooms on sale and the four
+ * occupancy rates for every night, plus a bulk editor for a date range.
+ * `lockedHotelId` pins it to one property for a hotel's own panel and drops
+ * the hotel picker.
  */
 export async function InventoryView({
   session,
@@ -43,23 +45,52 @@ export async function InventoryView({
   to.setDate(to.getDate() + days);
   const toISO = toISODate(to);
 
-  const [roomTypesResult, calendar] = await Promise.all([
+  const [roomTypesResult, calendar, pricesResult] = await Promise.all([
     hotelId
       ? supabase
           .from('room_types')
-          .select('id, name')
+          .select('id, name, base_price, single_price, extra_adult_price, extra_child_price')
           .eq('hotel_id', hotelId)
           .eq('is_active', true)
           .order('sort_order')
       : Promise.resolve({ data: [] }),
     hotelId ? getInventoryCalendar(hotelId, from, toISO) : Promise.resolve([]),
+    hotelId
+      ? supabase
+          .from('room_prices')
+          .select('room_type_id, stay_date, price, single_price, extra_adult_price, extra_child_price')
+          .eq('hotel_id', hotelId)
+          .gte('stay_date', from)
+          .lt('stay_date', toISO)
+      : Promise.resolve({ data: [] }),
   ]);
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const roomTypes = ((roomTypesResult.data ?? []) as any[]).map((rt) => ({
+    id: rt.id as string,
+    name: rt.name as string,
+    rates: {
+      double: Number(rt.base_price),
+      single: rt.single_price == null ? null : Number(rt.single_price),
+      extraAdult: Number(rt.extra_adult_price ?? 0),
+      extraChild: Number(rt.extra_child_price ?? 0),
+    },
+  }));
+  const prices = ((pricesResult.data ?? []) as any[]).map((p) => ({
+    room_type_id: p.room_type_id as string,
+    stay_date: p.stay_date as string,
+    double: Number(p.price),
+    single: p.single_price == null ? null : Number(p.single_price),
+    extraAdult: p.extra_adult_price == null ? null : Number(p.extra_adult_price),
+    extraChild: p.extra_child_price == null ? null : Number(p.extra_child_price),
+  }));
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   return (
     <>
       <PageHeader
-        title="Inventory & rates"
-        description="Allocation per night. A room type is only sellable on nights that have an inventory row."
+        title="Rate & inventory"
+        description="Rooms on sale and rates per night for each room category. Bold rates are set for that night; the rest are the room's standard rates."
       />
 
       <FilterForm className="mb-5 flex flex-wrap gap-2">
@@ -82,7 +113,8 @@ export async function InventoryView({
       </FilterForm>
 
       <InventoryEditor
-        roomTypes={(roomTypesResult.data ?? []) as { id: string; name: string }[]}
+        roomTypes={roomTypes}
+        prices={prices}
         calendar={calendar}
         from={from}
         to={toISO}

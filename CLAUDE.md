@@ -65,8 +65,9 @@ changes. See `src/lib/demo/`: `dataset.ts` generates the data, `query.ts` is a P
 query engine, `rpc.ts` mirrors the PL/pgSQL booking engine, `triggers.ts` covers the database
 triggers.
 
-Inserts get each column's default from `src/lib/demo/defaults.ts`, generated from the migrations —
-run `npm run demo:defaults` after a migration adds or changes a default. Without it, rows written
+Inserts get each column's default from `src/lib/demo/defaults.ts`, generated from the migrations
+(`create table` and `alter table … add column`) — run `npm run demo:defaults` after a migration adds
+or changes a default. Without it, rows written
 by services lacked columns Postgres would fill (a notification without `state` crashed the
 Notifications page).
 
@@ -179,6 +180,28 @@ payment" (`/admin/payments/new`) finds a booking that still owes via `findBookin
 The Payments page totals come from `paymentTotals` (every matching payment, read in pages of
 1000), not from the 200 rows it lists. Booking actions return `{ error }` instead of throwing —
 Next hides thrown server-action messages in production.
+
+**Rates, promotions, commission** (migration 17). A room's nightly rate depends on who is in it
+(`room_night_rate`): 1 adult = `single_price` (blank falls back to the 2-adult rate), 2 adults =
+`base_price`, each adult over two adds `extra_adult_price`, every child adds `extra_child_price`;
+`room_prices` can override any of them per night. `quote_room_stay` prices one booking line night by
+night — party spread evenly over its rooms, then the best eligible promotion for that night taken off
+(they never stack). `search_availability` and `quoteBooking` both price through it, so keep any rate
+rule in that one function (and its mirror in `src/lib/demo/rpc.ts`). Promotions (`promotions`:
+Basic, Last Minute, Long Stay, Early Bird) change the price; coupons still apply on top; offers still
+only advertise. `discount_total` on a booking is promotions + coupon.
+
+"Payable to property" is `settle()` in `src/lib/settlement.ts` and nowhere else: AQOSS's commission is
+a percentage of the booking *before tax*; a booking keeps the rate it was made at
+(`bookings.commission_percent`, filled by a trigger), and older bookings follow the hotel's current
+rate. Only an all-hotels admin with `payouts.write` sets `hotels.commission_percent` (`saveHotel`
+ignores it from anyone else — a hotel must never lower its own commission). Payouts AQOSS makes to a
+hotel are `property_payouts` rows against a booking; what is still owed is derived, never stored. A
+hotel panel's Payments page is those settlements; guest payments moved to `payments/received`.
+
+Rate & Inventory's bulk form leaves blank fields alone. It only calls `ensure_room_inventory` with no
+room count for nights that have no row: that function resets every night it touches to the physical
+room count, which once undid a hotel's allocation whenever a rate was edited.
 
 **Dates**: `YYYY-MM-DD` strings are local calendar days. Never turn a `Date` back into one with
 `toISOString()` — east of UTC that is the previous day, which once saved every admin price a

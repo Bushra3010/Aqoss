@@ -70,6 +70,14 @@ export function AvailabilityCard({
           <p className="text-sm text-slate-500">
             {formatCurrency(perNight, currency)} / night
           </p>
+          {result.promotion && result.original_total_price > result.total_price ? (
+            <p className="mt-1 text-sm">
+              <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700">
+                {result.promotion}
+              </span>{' '}
+              <s className="text-slate-400">{formatCurrency(result.original_total_price, currency)}</s>
+            </p>
+          ) : null}
           <p className="text-2xl font-bold text-slate-900">
             {formatCurrency(result.total_price, currency)}
           </p>

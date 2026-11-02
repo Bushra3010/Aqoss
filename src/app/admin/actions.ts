@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
-import { requirePermission, canAccessHotel, type AdminSession } from '@/lib/auth/session';
+import { requirePermission, can, canAccessHotel, type AdminSession } from '@/lib/auth/session';
 import { hotelSchema, websiteSchema, inventorySchema } from '@/lib/validation/schemas';
 import { recordAudit } from '@/services/audit.service';
 import { cancelBooking, setBookingStatus } from '@/services/booking.service';
@@ -119,7 +119,16 @@ export async function saveHotel(_prev: ActionState, formData: FormData): Promise
     }
 
     const supabase = createAdminSupabase();
-    const payload = { ...parsed, slug: parsed.slug || slugify(parsed.name) };
+    const payload: Record<string, unknown> = { ...parsed, slug: parsed.slug || slugify(parsed.name) };
+
+    // AQOSS's commission: only an all-hotels admin who records payouts may set
+    // it, so a property's own manager can never lower their commission.
+    const commission = formData.get('commission_percent');
+    if (commission !== null && commission !== '' && can(session, 'payouts.write') && !session.hotelScope.length) {
+      const value = Number(commission);
+      if (!(value >= 0 && value <= 100)) return { error: 'Commission must be between 0 and 100%.' };
+      payload.commission_percent = value;
+    }
 
     if (id) {
       const { data: before } = await supabase.from('hotels').select('*').eq('id', id).maybeSingle();
@@ -406,7 +415,11 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
       to: formData.get('to'),
       total_rooms: formData.get('total_rooms') || undefined,
       price: formData.get('price') || undefined,
-      is_closed: formData.get('is_closed') === 'on',
+      single_price: formData.get('single_price') || undefined,
+      extra_adult_price: formData.get('extra_adult_price') || undefined,
+      extra_child_price: formData.get('extra_child_price') || undefined,
+      // '' keeps each night as it is; editing a rate never reopens a closed night.
+      is_closed: { open: false, close: true }[String(formData.get('sale') ?? '')],
     });
 
     if (parsed.to <= parsed.from) {
@@ -417,7 +430,7 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
 
     const { data: roomType } = await supabase
       .from('room_types')
-      .select('hotel_id')
+      .select('hotel_id, base_price')
       .eq('id', parsed.room_type_id)
       .maybeSingle();
 
@@ -426,13 +439,42 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
       return { error: 'This hotel is outside your assigned scope.' };
     }
 
-    // Make sure a row exists for every night in the range first.
-    await ensureInventory({
-      roomTypeId: parsed.room_type_id,
-      from: parsed.from,
-      to: parsed.to,
-      totalRooms: parsed.total_rooms,
-    });
+    const dates: string[] = [];
+    // Local date parts, not toISOString(): east of UTC, local midnight is
+    // still the previous day in UTC and every price landed a night early.
+    for (let d = new Date(`${parsed.from}T00:00:00`); d < new Date(`${parsed.to}T00:00:00`); d.setDate(d.getDate() + 1)) {
+      dates.push(toISODate(d));
+    }
+
+    // Make sure a row exists for every night in the range first. With no room
+    // count given, only the missing nights are added: ensure_room_inventory
+    // resets every night it touches to the physical room count, which would
+    // undo a hotel's own allocation just for editing a rate.
+    if (parsed.total_rooms !== undefined) {
+      await ensureInventory({
+        roomTypeId: parsed.room_type_id,
+        from: parsed.from,
+        to: parsed.to,
+        totalRooms: parsed.total_rooms,
+      });
+    } else {
+      const { data: have } = await supabase
+        .from('room_inventory')
+        .select('stay_date')
+        .eq('room_type_id', parsed.room_type_id)
+        .gte('stay_date', parsed.from)
+        .lt('stay_date', parsed.to);
+      const present = new Set((have ?? []).map((r: { stay_date: string }) => r.stay_date));
+      for (let i = 0; i < dates.length; i++) {
+        if (present.has(dates[i])) continue;
+        let j = i;
+        while (j + 1 < dates.length && !present.has(dates[j + 1])) j++;
+        const end = new Date(`${dates[j]}T00:00:00`);
+        end.setDate(end.getDate() + 1);
+        await ensureInventory({ roomTypeId: parsed.room_type_id, from: dates[i], to: toISODate(end) });
+        i = j;
+      }
+    }
 
     if (parsed.is_closed !== undefined) {
       await supabase
@@ -443,23 +485,36 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
         .lt('stay_date', parsed.to);
     }
 
-    if (parsed.price !== undefined) {
-      const dates: string[] = [];
-      // Local date parts, not toISOString(): east of UTC, local midnight is
-      // still the previous day in UTC and every price landed a night early.
-      for (let d = new Date(`${parsed.from}T00:00:00`); d < new Date(`${parsed.to}T00:00:00`); d.setDate(d.getDate() + 1)) {
-        dates.push(toISODate(d));
-      }
+    const rates = ['price', 'single_price', 'extra_adult_price', 'extra_child_price'] as const;
+    if (rates.some((k) => parsed[k] !== undefined)) {
+      // A blank field keeps that night's current rate, so read what is there.
+      const { data: existing } = await supabase
+        .from('room_prices')
+        .select('stay_date, price, single_price, extra_adult_price, extra_child_price, discount_percent, min_nights')
+        .eq('room_type_id', parsed.room_type_id)
+        .gte('stay_date', parsed.from)
+        .lt('stay_date', parsed.to);
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      const byDate = new Map(((existing ?? []) as any[]).map((r) => [r.stay_date, r]));
 
-      await supabase.from('room_prices').upsert(
-        dates.map((stay_date) => ({
-          hotel_id: roomType.hotel_id,
-          room_type_id: parsed.room_type_id,
-          stay_date,
-          price: parsed.price,
-        })),
+      const { error } = await supabase.from('room_prices').upsert(
+        dates.map((stay_date) => {
+          const was = byDate.get(stay_date);
+          return {
+            hotel_id: roomType.hotel_id,
+            room_type_id: parsed.room_type_id,
+            stay_date,
+            price: parsed.price ?? was?.price ?? roomType.base_price,
+            single_price: parsed.single_price ?? was?.single_price ?? null,
+            extra_adult_price: parsed.extra_adult_price ?? was?.extra_adult_price ?? null,
+            extra_child_price: parsed.extra_child_price ?? was?.extra_child_price ?? null,
+            discount_percent: was?.discount_percent ?? null,
+            min_nights: was?.min_nights ?? 1,
+          };
+        }),
         { onConflict: 'room_type_id,stay_date' },
       );
+      if (error) throw error;
     }
 
     await recordAudit({
@@ -472,7 +527,7 @@ export async function updateInventory(_prev: ActionState, formData: FormData): P
     });
 
     revalidatePath('/admin', 'layout');
-    return { success: 'Availability updated.' };
+    return { success: 'Rates and inventory updated.' };
   } catch (err) {
     return toState(err);
   }

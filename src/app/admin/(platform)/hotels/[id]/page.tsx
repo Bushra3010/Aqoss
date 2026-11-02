@@ -85,7 +85,7 @@ export default async function HotelDetailPage({ params }: { params: { id: string
         </section>
       )}
 
-      {can(session, 'hotels.write') ? <HotelForm hotel={h} /> : null}
+      {can(session, 'hotels.write') ? <HotelForm hotel={h} canSetCommission={can(session, 'payouts.write') && !session!.hotelScope.length} /> : null}
     </>
   );
 }

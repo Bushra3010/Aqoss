@@ -20,7 +20,7 @@ import { UpcomingStays } from '@/components/admin/dashboard/UpcomingStays';
 import { formatCurrency, todayISO } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Overview · Hotel admin' };
+export const metadata: Metadata = { title: 'Dashboard · Hotel admin' };
 
 /** One hotel's dashboard: the platform dashboard, scoped to this property. */
 export default async function HotelOverviewPage({
