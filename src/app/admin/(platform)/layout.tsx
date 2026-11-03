@@ -15,18 +15,15 @@ export const dynamic = 'force-dynamic';
  * page itself re-checks the permission anyway.
  */
 const MAIN_NAV: (NavItem & { permission: string })[] = [
-  { href: '/admin', label: 'Dashboard', icon: 'dashboard', permission: 'dashboard.read' },
   { href: '/admin/hotels', label: 'Hotels & Properties', icon: 'hotels', permission: 'hotels.read' },
-  { href: '/admin/websites', label: 'Websites', icon: 'websites', permission: 'websites.read' },
-  { href: '/admin/rooms', label: 'Rooms & Inventory', icon: 'rooms', permission: 'rooms.read' },
-  { href: '/admin/inventory', label: 'Rate & Inventory', icon: 'pricing', permission: 'inventory.read' },
+  { href: '/admin', label: 'Home', icon: 'dashboard', permission: 'dashboard.read' },
   { href: '/admin/bookings', label: 'Bookings', icon: 'bookings', permission: 'bookings.read' },
-  { href: '/admin/customers', label: 'Customers (CRM)', icon: 'customers', permission: 'customers.read' },
+  { href: '/admin/websites', label: 'Create free website', icon: 'websites', permission: 'websites.read' },
+  { href: '/admin/rooms', label: 'Rooms & Inventory', icon: 'rooms', permission: 'rooms.read' },
   { href: '/admin/payments', label: 'Payments', icon: 'payments', permission: 'payments.read' },
   { href: '/admin/offers', label: 'Offers & Promotions', icon: 'offers', permission: 'offers.read' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'reviews', permission: 'reviews.read' },
-  { href: '/admin/reports', label: 'Reports', icon: 'reports', permission: 'reports.read' },
-  { href: '/admin/notifications', label: 'Notifications', icon: 'notifications', permission: 'notifications.read' },
+  { href: '/admin/reports', label: 'Analytics', icon: 'reports', permission: 'reports.read' },
 ];
 
 const ADMIN_NAV: (NavItem & { permission: string })[] = [
