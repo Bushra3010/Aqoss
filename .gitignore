@@ -14,3 +14,10 @@ supabase/.temp/
 supabase/.branches/
 .env*
 !.env.example
+!.env.production
+
+# Cloudflare (OpenNext / wrangler)
+.open-next/
+.wrangler/
+.dev.vars*
+.cf-secrets.env

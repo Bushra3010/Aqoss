@@ -1,0 +1,23 @@
+// Cloudflare Workers deploy of the Next.js app, built by OpenNext
+// (`npm run cf:build`). See CLAUDE.md › Hosting on Cloudflare.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aqoss",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "aqoss" }],
+  // The AQOSS website and every hotel subdomain. The zone needs proxied DNS
+  // records for aqoss.com, www and * (any target, e.g. AAAA 100::).
+  "routes": [
+    { "pattern": "aqoss.com/*", "zone_name": "aqoss.com" },
+    { "pattern": "www.aqoss.com/*", "zone_name": "aqoss.com" },
+    { "pattern": "*.aqoss.com/*", "zone_name": "aqoss.com" }
+  ],
+  "workers_dev": true,
+  "observability": { "enabled": true }
+}

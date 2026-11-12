@@ -1,0 +1,37 @@
+# Builds the app with OpenNext and deploys it to the `aqoss` Cloudflare Worker
+# on every push to main. Needs one repository secret, CLOUDFLARE_API_TOKEN
+# (Cloudflare template "Edit Cloudflare Workers"). Server secrets are stored on
+# the Worker itself and survive deploys; public build values are .env.production.
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build and deploy
+        run: npm run cf:deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 23daa631840d744e73ad123a5812734f

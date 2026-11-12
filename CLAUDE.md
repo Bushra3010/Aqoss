@@ -278,6 +278,18 @@ preview), so a Netlify or Vercel deploy serves the AQOSS website without configu
 the app assumes `localhost:3000` and every real host looks like an unknown hotel ("Hotel not
 found").
 
+**Hosting on Cloudflare.** The app also deploys as a Cloudflare Worker through OpenNext
+(`wrangler.jsonc`, `open-next.config.ts`; `npm run cf:preview` runs the built Worker locally on
+:8787, `npm run cf:deploy` ships it). `@opennextjs/cloudflare` is pinned to 1.15.1, the last release
+that supports Next 14 — later ones need Next 15.5+, so moving past it means the Next 15 upgrade first.
+Cloudflare sets no URL variable at build time, so the public build values (`NEXT_PUBLIC_ROOT_DOMAIN`,
+`NEXT_PUBLIC_SUPABASE_*`) live in the committed `.env.production` — keep server secrets out of it:
+OpenNext embeds every `.env*` value it finds into the Worker bundle. Server secrets are set on the
+Worker with `wrangler secret put` and survive deploys. Pushes to `main` deploy through
+`.github/workflows/deploy-cloudflare.yml` (repository secret `CLOUDFLARE_API_TOKEN`). The
+`aqoss.com` zone is on Cloudflare; the Worker's routes in `wrangler.jsonc` take aqoss.com, www and
+`*.aqoss.com`, which need proxied DNS records (the `*` one is `AAAA 100::`).
+
 Where the host can't have subdomains (`*.netlify.app`, `*.vercel.app` — no DNS and no certificate
 for a second level), hotels are paths instead: `hotelsOnPaths` in `site-url.ts` makes `websiteUrl()`
 return `<main domain>/site/<slug>`. Middleware rewrites `/site/<slug>/…` to the hotel's own route,

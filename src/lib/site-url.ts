@@ -23,7 +23,7 @@ export function websiteHost(slug: string): string {
 export const SITE_PATH_PREFIX = '/site';
 
 /**
- * Hosting such as `*.netlify.app` gives the platform one name and no
+ * Hosting such as `*.netlify.app` or `*.workers.dev` gives the platform one name and no
  * subdomains under it (no DNS, no certificate), so there each hotel is served
  * at `<main domain>/site/<slug>` instead. Force either way with
  * NEXT_PUBLIC_HOTEL_URLS=path|subdomain; a custom domain with a wildcard
@@ -31,7 +31,7 @@ export const SITE_PATH_PREFIX = '/site';
  */
 export const hotelsOnPaths =
   process.env.NEXT_PUBLIC_HOTEL_URLS === 'path' ||
-  (process.env.NEXT_PUBLIC_HOTEL_URLS !== 'subdomain' && /\.(netlify|vercel)\.app$/.test(platformHost));
+  (process.env.NEXT_PUBLIC_HOTEL_URLS !== 'subdomain' && /\.(netlify\.app|vercel\.app|workers\.dev|pages\.dev)$/.test(platformHost));
 
 /** Public address of a website, port included in dev. */
 export function websiteUrl(slug: string): string {

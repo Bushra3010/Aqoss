@@ -7,7 +7,8 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 // a hotel's subdomain, so it must be known at build time (middleware has it
 // inlined). Explicit settings win; otherwise the host's own build variables are
 // used — Netlify's `URL`, or on Vercel the production domain (a preview build
-// uses its branch address instead) — so a deploy works unconfigured.
+// uses its branch address instead) — so a deploy works unconfigured. Cloudflare
+// has no such variable: set NEXT_PUBLIC_ROOT_DOMAIN for its build.
 const vercelHost =
   process.env.VERCEL_ENV === 'production'
     ? process.env.VERCEL_PROJECT_PRODUCTION_URL
