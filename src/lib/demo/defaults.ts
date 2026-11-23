@@ -45,7 +45,7 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "currency": "INR",
     "timezone": "Asia/Kolkata",
     "tax_percent": 12,
-    "highlights": "{}",
+    "highlights": [],
     "metadata": {},
     "created_at": NOW,
     "updated_at": NOW,
@@ -200,7 +200,7 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
     "created_at": NOW
   },
   "transport_services": {
-    "amenities": "{}",
+    "amenities": [],
     "status": "ACTIVE",
     "created_at": NOW,
     "updated_at": NOW
@@ -310,6 +310,10 @@ const DEFAULTS: Record<string, Record<string, Default>> = {
   },
   "property_payouts": {
     "created_at": NOW
+  },
+  "hotel_legal_details": {
+    "created_at": NOW,
+    "updated_at": NOW
   }
 };
 

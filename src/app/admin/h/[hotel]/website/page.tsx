@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { can } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getHotelPanel } from '@/lib/admin/hotel-panel';
+import { listingPath } from '@/lib/listing';
 import { NoAccess, PageHeader } from '@/components/admin/shared';
 import { WebsiteForm } from '@/components/admin/WebsiteForm';
 import { WebsiteStatusButtons } from '@/components/admin/WebsiteStatusButtons';
@@ -27,8 +28,8 @@ export default async function HotelWebsitePage({ params }: { params: { hotel: st
         title="No website yet"
         description="Create one to put this hotel online using the shared template."
         action={
-          can(session, 'websites.write') ? (
-            <Link href={`/admin/websites/new?hotel=${hotel.id}`} className="btn-primary">Create website</Link>
+          can(session, 'hotels.write') ? (
+            <Link href={listingPath(hotel.id)} className="btn-primary">Set up website</Link>
           ) : null
         }
       />

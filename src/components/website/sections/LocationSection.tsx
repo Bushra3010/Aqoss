@@ -5,6 +5,7 @@ const GROUP_LABELS: Record<string, string> = {
   railway: 'Railway stations',
   bus_stand: 'Bus stands',
   attraction: 'Nearby attractions',
+  hospital: 'Hospitals',
 };
 
 /** Location module (PRD §17). */

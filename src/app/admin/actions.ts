@@ -132,6 +132,10 @@ export async function saveHotel(_prev: ActionState, formData: FormData): Promise
 
     if (id) {
       const { data: before } = await supabase.from('hotels').select('*').eq('id', id).maybeSingle();
+      // A draft goes live through its listing, which AQOSS approves.
+      if (before?.status === 'DRAFT' && payload.status !== 'DRAFT' && !can(session, 'listings.publish')) {
+        return { error: 'AQOSS puts a new property live after checking its listing. Submit it for approval from the listing.' };
+      }
       const { error } = await supabase.from('hotels').update(payload).eq('id', id);
       if (error) throw error;
 
@@ -178,6 +182,10 @@ export async function setHotelStatus(hotelId: string, status: 'ACTIVE' | 'INACTI
   if (!canAccessHotel(session, hotelId)) throw new AppError('Out of scope.', 403);
 
   const supabase = createAdminSupabase();
+  const { data: current } = await supabase.from('hotels').select('status').eq('id', hotelId).maybeSingle();
+  if (current?.status === 'DRAFT' && status === 'ACTIVE' && !can(session, 'listings.publish')) {
+    throw new AppError('AQOSS puts a new property live after checking its listing.', 403);
+  }
   await supabase
     .from('hotels')
     .update({ status, archived_at: status === 'ARCHIVED' ? new Date().toISOString() : null })

@@ -19,6 +19,7 @@ import { UpcomingStays } from '@/components/admin/dashboard/UpcomingStays';
 import { formatCurrency } from '@/lib/utils';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { hotelPanelPath } from '@/lib/admin/hotel-panel';
+import { listingPath } from '@/lib/listing';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Dashboard · AQOSS CRM' };
@@ -42,9 +43,11 @@ export default async function AdminDashboard({
   if (session?.hotelScope.length === 1) {
     const { data } = await createAdminSupabase()
       .from('hotels')
-      .select('slug')
+      .select('id, slug, status')
       .eq('id', session.hotelScope[0])
       .maybeSingle();
+    // A property still being listed opens on its listing, not an empty panel.
+    if (data?.status === 'DRAFT' && can(session, 'hotels.write')) redirect(listingPath(data.id));
     if (data?.slug) redirect(hotelPanelPath(data.slug));
   }
 

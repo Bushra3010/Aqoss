@@ -18,7 +18,6 @@ const MAIN_NAV: (NavItem & { permission: string })[] = [
   { href: '/admin/hotels', label: 'Hotels & Properties', icon: 'hotels', permission: 'hotels.read' },
   { href: '/admin', label: 'Home', icon: 'dashboard', permission: 'dashboard.read' },
   { href: '/admin/bookings', label: 'Bookings', icon: 'bookings', permission: 'bookings.read' },
-  { href: '/admin/websites', label: 'Create free website', icon: 'websites', permission: 'websites.read' },
   { href: '/admin/rooms', label: 'Rooms & Inventory', icon: 'rooms', permission: 'rooms.read' },
   { href: '/admin/payments', label: 'Payments', icon: 'payments', permission: 'payments.read' },
   { href: '/admin/offers', label: 'Offers & Promotions', icon: 'offers', permission: 'offers.read' },

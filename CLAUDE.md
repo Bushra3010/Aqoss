@@ -258,10 +258,26 @@ that is not built yet carries `soon: true`; the site no longer shows a "Coming s
 feature ships. `/blog` and `/training` are "Coming soon" pages, left out of the Resources menu and
 footer until there is real content; do not fill them with sample posts.
 
-**Hotel registration** (`/admin/register`, linked from the CRM sign-in) is public — middleware lets
-it through signed out — and only stores a `hotel_registrations` row (migration 16). It never creates
-an account: a super admin approves it under Hotel registrations, then adds the hotel and the
-staff sign-in as usual.
+**Property listing** (migration 18) is the only way a property and its website are created — there
+is no separate "Create website" or "Add hotel" form any more. In the CRM it is Hotels & Properties →
+List property (`/admin/hotels/new`): pick the property type (Hotel or Homestays & Villas; there is
+deliberately no Lodge), then Basic Info creates a DRAFT hotel and DRAFT website, and the rest continue
+at `/admin/hotels/<id>/listing?step=…` — Location, Amenities, Rooms, Photos, Policies, Finance &
+Legal, Go Live (`src/lib/listing.ts`, `listing.service.ts`, `listing-actions.ts`). Which steps are
+done is derived from the data (`getListing`), never stored; the required ones are re-checked on the
+server before anything goes live. Policies are kept as answers in `hotels.metadata.listing.policies`
+and written out as `hotel_policies` text. PAN, GSTIN and bank details live in `hotel_legal_details`,
+never on `hotels` — an ACTIVE hotel row is publicly readable — and the audit log keeps them masked.
+
+**Owners list from the website** at `/admin/register` ("List your property" in the AQOSS header and
+on the CRM sign-in; public, honeypot + rate limit). It creates their login, the draft property, and
+an `admin_users` row with the `property_owner` role scoped to that one hotel — in the same call,
+because an empty `hotel_scope` means *every* hotel. Owners fill in the same steps but can only
+Submit for approval (`metadata.listing.submitted_at`); the hotel shows as "Awaiting approval" under
+Hotels & Properties. Going live needs `listings.publish` (Super Admin, via `*`): publishing moves the
+owner to `property_manager`. `saveHotel` / `setHotelStatus` refuse to take a DRAFT hotel live without
+that permission, so the hotel panel is not a way round the approval. `hotel_registrations` (migration
+16) only holds requests from the old form.
 
 Every hotel website is served at `<website-slug>.<NEXT_PUBLIC_ROOT_DOMAIN>` — in production
 `the-serenity-inn-goa.aqoss.com`, in dev `the-serenity-inn-goa.localhost:3000`. `resolveTenantByHost`

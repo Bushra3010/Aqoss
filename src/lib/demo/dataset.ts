@@ -215,6 +215,7 @@ function seedRbac(t: Tables) {
     ['demo_requests.read', 'demo_requests', 'read'], ['demo_requests.write', 'demo_requests', 'write'],
     ['hotel_registrations.read', 'hotel_registrations', 'read'], ['hotel_registrations.write', 'hotel_registrations', 'write'],
     ['payouts.write', 'payouts', 'write'],
+    ['listings.publish', 'listings', 'publish'],
   ];
 
   for (const [key, module, action] of permissionKeys) {
@@ -228,6 +229,7 @@ function seedRbac(t: Tables) {
     ['crm_staff', 'CRM Staff', 'Customers, bookings and reviews'],
     ['finance_staff', 'Finance Staff', 'Payments, refunds, revenue and reports'],
     ['property_manager', 'Property Manager', 'Runs one property end to end: bookings, rooms, pricing, website, payments and reviews'],
+    ['property_owner', 'Property Owner', 'Signed up on the website to list one property; fills in the listing until AQOSS approves it'],
   ];
 
   for (const [key, name, description] of roleDefs) {
@@ -265,6 +267,8 @@ function seedRbac(t: Tables) {
       'payments.read', 'payments.refund', 'transport.read', 'reviews.read', 'reviews.moderate',
       'reports.read', 'leads.read', 'leads.write', 'offers.read', 'offers.write', 'payments.write',
     ],
+    // Signed up on the website to list one property (migration 18).
+    property_owner: ['hotels.read', 'hotels.write', 'rooms.read', 'rooms.write'],
   };
 
   for (const [roleKey, keys] of Object.entries(grants)) {

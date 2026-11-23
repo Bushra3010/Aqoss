@@ -24,13 +24,13 @@ export default async function AdminLoginPage({
   return (
     <AdminAuthFrame
       title="Sign in"
-      subtitle="Staff access only."
+      subtitle="For hotel teams and property owners."
       footer={
         <>
           <p className="mt-4 text-center text-sm text-slate-400">
             New to AQOSS?{' '}
             <Link href="/admin/register" className="font-semibold text-white hover:underline">
-              Register your hotel
+              List your property
             </Link>
           </p>
 

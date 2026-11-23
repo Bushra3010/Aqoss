@@ -80,6 +80,9 @@ export function PlatformHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 xl:ml-6">
+          <Link href="/admin/register" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-blue-700 hover:bg-blue-50 lg:inline-flex">
+            List your property
+          </Link>
           <Link href="/admin/login" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-[#0F172A] hover:bg-slate-100 sm:inline-flex">
             Hotel Sign In
           </Link>
@@ -105,6 +108,9 @@ export function PlatformHeader() {
               {item.label}
             </a>
           ))}
+          <Link href="/admin/register" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-blue-700 hover:bg-slate-50">
+            List your property
+          </Link>
           <Link href="/admin/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-blue-700 hover:bg-slate-50">
             Hotel Sign In
           </Link>

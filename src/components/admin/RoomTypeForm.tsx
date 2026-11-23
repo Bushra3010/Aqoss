@@ -57,12 +57,15 @@ export function RoomTypeForm({
   roomType,
   returnBase,
   cancelHref,
+  doneHref,
 }: {
   hotel?: { id: string; name: string };
   hotels?: { id: string; name: string }[];
   roomType?: RoomTypeValues;
   returnBase: string;
   cancelHref: string;
+  /** Where to go after saving, instead of the room's own page (the property listing). */
+  doneHref?: string;
 }) {
   const editing = Boolean(roomType);
   // The form submits through JavaScript (it uploads photos after saving); until
@@ -153,7 +156,8 @@ export function RoomTypeForm({
       }
 
       setProgress('Done');
-      router.push(failed ? `${result.next}&failed=${failed}` : result.next);
+      const target = doneHref ?? result.next;
+      router.push(failed ? `${target}&failed=${failed}` : target);
     });
   }
 

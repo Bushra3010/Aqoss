@@ -34,6 +34,9 @@ function readColumn(table: string, raw: string, cols: Record<string, Value>) {
   else if (/^-?\d+(\.\d+)?$/.test(d)) cols[col] = Number(d);
   else if (d === "'{}'::jsonb") cols[col] = {};
   else if (d === "'[]'::jsonb" || /^'\{\}'::\w+\[\]$/.test(d)) cols[col] = [];
+  // `text[] default '{}'` is an empty array, not the string "{}" (that string
+  // once crashed the website of every hotel created in the demo CRM).
+  else if (d === "'{}'" && /^\w+\s+\w+\[\]/.test(line)) cols[col] = [];
   else if (/^'[^']*'(::\w+)?$/.test(d)) cols[col] = d.match(/^'([^']*)'/)![1];
   else skipped.push(`${table}.${col} = ${d}`);
 }

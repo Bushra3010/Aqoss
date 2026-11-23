@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Building2, BedDouble, Globe, CalendarDays, UserPlus, BarChart3, ChevronRight } from 'lucide-react';
+import { Building2, BedDouble, CalendarDays, UserPlus, BarChart3, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ACTIONS = [
-  { href: '/admin/hotels/new', title: 'Add New Hotel', subtitle: 'Create a new property', icon: Building2, tone: 'blue', permission: 'hotels.write' },
+  { href: '/admin/hotels/new', title: 'List Property', subtitle: 'Add a property and its free website', icon: Building2, tone: 'blue', permission: 'hotels.write' },
   { href: '/admin/rooms', title: 'Manage Rooms', subtitle: 'Add / edit rooms', icon: BedDouble, tone: 'indigo', permission: 'rooms.read' },
-  { href: '/admin/websites/new', title: 'Create Website', subtitle: 'Setup hotel website', icon: Globe, tone: 'blue', permission: 'websites.write' },
   { href: '/admin/bookings', title: 'View Bookings', subtitle: 'All bookings', icon: CalendarDays, tone: 'indigo', permission: 'bookings.read' },
   { href: '/admin/customers', title: 'Add Customer', subtitle: 'New customer', icon: UserPlus, tone: 'blue', permission: 'customers.read' },
   { href: '/admin/reports', title: 'Generate Report', subtitle: 'View analytics', icon: BarChart3, tone: 'indigo', permission: 'reports.read' },

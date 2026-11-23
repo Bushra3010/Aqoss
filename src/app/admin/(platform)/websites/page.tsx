@@ -8,6 +8,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { PageHeader, Table, Td, NoAccess } from '@/components/admin/shared';
 import { StatusBadge } from '@/components/ui';
 import { WebsiteStatusButtons } from '@/components/admin/WebsiteStatusButtons';
+import { listingPath } from '@/lib/listing';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Websites · AQOSS CRM' };
@@ -31,15 +32,16 @@ export default async function WebsitesPage({ searchParams }: { searchParams: { q
   const { data } = await query;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const websites = (data ?? []) as any[];
+  const canList = can(session, 'websites.write') && can(session, 'hotels.write');
 
   return (
     <>
       <PageHeader
         title="Websites"
-        description="One codebase, one template, many hotel websites. Assign a hotel and a domain to publish."
+        description="One template, many hotel websites. Create one by listing the property step by step; it goes live at the end."
         action={
           can(session, 'websites.write') ? (
-            <Link href="/admin/websites/new" className="btn-primary">Create website</Link>
+            <Link href="/admin/hotels/new" className="btn-primary">List property</Link>
           ) : null
         }
       />
@@ -101,7 +103,12 @@ export default async function WebsitesPage({ searchParams }: { searchParams: { q
                   >
                     {site.status === 'ACTIVE' ? 'Open website' : 'Preview'}
                   </Link>
-                  {can(session, 'websites.write') ? (
+                  {/* A draft goes live through its listing, which checks every required step first. */}
+                  {site.status === 'DRAFT' && canList ? (
+                    <Link href={listingPath(hotel?.id, 'go-live')} className="text-sm font-semibold text-blue-700 hover:underline">
+                      Continue listing
+                    </Link>
+                  ) : can(session, 'websites.write') ? (
                     <WebsiteStatusButtons websiteId={site.id} status={site.status} />
                   ) : null}
                 </div>

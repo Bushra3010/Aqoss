@@ -7,32 +7,11 @@ import { recordAudit } from '@/services/audit.service';
 export const REGISTRATION_STATUSES = ['NEW', 'APPROVED', 'REJECTED'] as const;
 export type HotelRegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
 
-/** Stores a "Register your hotel" request. It grants nothing — see migration 16. */
-export async function createHotelRegistration(input: {
-  name: string;
-  hotel_name: string;
-  email: string;
-  phone: string;
-  city: string;
-  address?: string | null;
-  rooms?: number | null;
-  message?: string | null;
-}) {
-  const { error } = await createAdminSupabase()
-    .from('hotel_registrations')
-    .insert({
-      name: input.name,
-      hotel_name: input.hotel_name,
-      email: input.email,
-      phone: input.phone,
-      city: input.city,
-      address: input.address || null,
-      rooms: input.rooms ?? null,
-      message: input.message || null,
-    });
-  if (error) throw error;
-}
-
+/**
+ * Requests from the old "Register your hotel" form (migration 16). Owners now
+ * sign up and list their property themselves (migration 18), so no new ones
+ * arrive; these are kept so earlier requests can still be followed up.
+ */
 export async function listHotelRegistrations(status?: string) {
   let query = createAdminSupabase()
     .from('hotel_registrations')

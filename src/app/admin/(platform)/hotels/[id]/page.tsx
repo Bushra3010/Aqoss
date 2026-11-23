@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { websiteAdminUrl } from '@/lib/site-url';
+import { listingPath } from '@/lib/listing';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getAdminSession, can, canAccessHotel } from '@/lib/auth/session';
@@ -38,6 +39,11 @@ export default async function HotelDetailPage({ params }: { params: { id: string
         action={
           <>
             <StatusBadge status={h.status} />
+            {can(session, 'hotels.write') ? (
+              <Link href={listingPath(h.id, h.status === 'DRAFT' ? 'go-live' : 'basic-info')} className="btn-outline">
+                {h.status === 'DRAFT' ? 'Continue listing' : 'Edit listing'}
+              </Link>
+            ) : null}
             <Link href={hotelPanelPath(h.slug)} className="btn-primary">Open hotel admin</Link>
             <Link href="/admin/hotels" className="btn-outline">Back</Link>
           </>
@@ -79,8 +85,8 @@ export default async function HotelDetailPage({ params }: { params: { id: string
           <p className="mt-1 text-sm text-slate-500">
             Create one to put this hotel online using the shared template.
           </p>
-          <Link href={`/admin/websites/new?hotel=${h.id}`} className="btn-primary mt-3">
-            Create website
+          <Link href={listingPath(h.id)} className="btn-primary mt-3">
+            Set up website
           </Link>
         </section>
       )}
