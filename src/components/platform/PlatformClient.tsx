@@ -80,10 +80,10 @@ export function PlatformHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 xl:ml-6">
-          <Link href="/admin/register" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-blue-700 hover:bg-blue-50 lg:inline-flex">
+          <Link href="/admin/register" className="hidden whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-emerald-700 lg:inline-flex">
             List your property
           </Link>
-          <Link href="/admin/login" className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-semibold text-[#0F172A] hover:bg-slate-100 sm:inline-flex">
+          <Link href="/admin/login" className="hidden whitespace-nowrap rounded-lg bg-slate-900 px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-slate-700 sm:inline-flex">
             Hotel Sign In
           </Link>
           <a href="/#book-demo" className="whitespace-nowrap rounded-lg bg-blue-700 px-4 py-2.5 text-[15px] font-semibold text-white shadow-sm hover:bg-blue-800">
